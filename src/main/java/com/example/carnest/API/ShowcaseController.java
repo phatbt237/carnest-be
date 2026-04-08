@@ -2,9 +2,11 @@ package com.example.carnest.API;
 
 import com.example.carnest.Config.CustomUserDetails;
 import com.example.carnest.Model.AuthDTO;
+import com.example.carnest.Model.ShowcaseDTO;
 import com.example.carnest.Service.ShowcaseService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -23,7 +25,7 @@ public class ShowcaseController {
     @PostMapping
     @Operation(summary = "Tạo tủ trưng bày")
     public ResponseEntity<AuthDTO.MessageResponse> create(
-            @AuthenticationPrincipal CustomUserDetails u, @RequestBody Map<String, Object> request) {
+            @AuthenticationPrincipal CustomUserDetails u, @Valid @RequestBody ShowcaseDTO.CreateRequest request) {
         return ResponseEntity.status(HttpStatus.CREATED).body(AuthDTO.MessageResponse.builder()
                 .status(201).message("Tạo thành công").data(showcaseService.create(u.getUserId(), request)).build());
     }
@@ -31,7 +33,7 @@ public class ShowcaseController {
     @PostMapping("/{id}/items")
     @Operation(summary = "Thêm xe vào tủ")
     public ResponseEntity<AuthDTO.MessageResponse> addItem(
-            @AuthenticationPrincipal CustomUserDetails u, @PathVariable Long id, @RequestBody Map<String, Object> request) {
+            @AuthenticationPrincipal CustomUserDetails u, @PathVariable Long id, @Valid @RequestBody ShowcaseDTO.AddItemRequest request) {
         return ResponseEntity.ok(AuthDTO.MessageResponse.builder().status(200).message("Đã thêm")
                 .data(showcaseService.addItem(u.getUserId(), id, request)).build());
     }

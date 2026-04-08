@@ -4,6 +4,7 @@ import com.example.carnest.Entity.*;
 import com.example.carnest.Exception.BadRequestException;
 import com.example.carnest.Exception.ResourceNotFoundException;
 import com.example.carnest.Model.ShopDTO;
+import com.example.carnest.Model.ShowcaseDTO;
 import com.example.carnest.Repository.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -21,41 +22,42 @@ public class ShowcaseService {
     @Autowired private UserRepository userRepository;
 
     @Transactional
-    public Map<String, Object> create(Long userId, Map<String, Object> request) {
+    public ShowcaseDTO.ShowcaseResponse create(Long userId, ShowcaseDTO.CreateRequest request) {
         User user = userRepository.findById(userId).orElseThrow();
         Showcase sc = new Showcase();
         sc.setUser(user);
-        sc.setName((String) request.get("name"));
-        sc.setDescription((String) request.get("description"));
-        sc.setCoverImageUrl((String) request.get("coverImageUrl"));
-        sc.setIsPublic(request.get("isPublic") != null ? (Boolean) request.get("isPublic") : true);
+        sc.setName(request.getName());
+        sc.setDescription(request.getDescription());
+        sc.setCoverImageUrl(request.getCoverImageUrl());
+        sc.setIsPublic(request.getIsPublic() != null ? request.getIsPublic() : true);
         sc = showcaseRepository.save(sc);
-        return toMap(sc, false);
+        return toResponse(sc, false);
     }
 
     @Transactional
-    public Map<String, Object> addItem(Long userId, Long showcaseId, Map<String, Object> request) {
+    public ShowcaseDTO.ItemResponse addItem(Long userId, Long showcaseId, ShowcaseDTO.AddItemRequest request) {
         Showcase sc = showcaseRepository.findById(showcaseId)
                 .orElseThrow(() -> new ResourceNotFoundException("Showcase", "id", showcaseId));
         if (!sc.getUser().getId().equals(userId)) throw new BadRequestException("Không có quyền");
 
         ShowcaseItem item = new ShowcaseItem();
         item.setShowcase(sc);
-        item.setName((String) request.get("name"));
-        item.setBrand((String) request.get("brand"));
-        item.setScale((String) request.get("scale"));
-        item.setImageUrl((String) request.get("imageUrl"));
-        item.setDescription((String) request.get("description"));
+        item.setName(request.getName());
+        item.setBrand(request.getBrand());
+        item.setScale(request.getScale());
+        item.setImageUrl(request.getImageUrl());
+        item.setDescription(request.getDescription());
+        item.setPurchasePrice(request.getPurchasePrice());
         showcaseItemRepository.save(item);
 
         sc.setItemCount(sc.getItemCount() + 1);
         showcaseRepository.save(sc);
 
-        Map<String, Object> m = new HashMap<>();
-        m.put("id", item.getId());
-        m.put("name", item.getName());
-        m.put("imageUrl", item.getImageUrl());
-        return m;
+        ShowcaseDTO.ItemResponse res = new ShowcaseDTO.ItemResponse();
+        res.setId(item.getId()); res.setName(item.getName()); res.setBrand(item.getBrand());
+        res.setScale(item.getScale()); res.setImageUrl(item.getImageUrl());
+        res.setDescription(item.getDescription()); res.setPurchasePrice(item.getPurchasePrice());
+        return res;
     }
 
     @Transactional
@@ -106,5 +108,15 @@ public class ShowcaseService {
         m.put("isPublic", sc.getIsPublic()); m.put("isLiked", isLiked);
         m.put("ownerUsername", sc.getUser().getUsername()); m.put("createdAt", sc.getCreatedAt());
         return m;
+    }
+
+    private ShowcaseDTO.ShowcaseResponse toResponse(Showcase sc, boolean isLiked) {
+        ShowcaseDTO.ShowcaseResponse r = new ShowcaseDTO.ShowcaseResponse();
+        r.setId(sc.getId()); r.setName(sc.getName()); r.setDescription(sc.getDescription());
+        r.setCoverImageUrl(sc.getCoverImageUrl()); r.setItemCount(sc.getItemCount());
+        r.setLikeCount(sc.getLikeCount()); r.setViewCount(sc.getViewCount());
+        r.setIsPublic(sc.getIsPublic()); r.setIsLiked(isLiked);
+        r.setOwnerUsername(sc.getUser().getUsername()); r.setCreatedAt(sc.getCreatedAt());
+        return r;
     }
 }
