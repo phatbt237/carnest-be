@@ -4,6 +4,7 @@ import com.example.carnest.Entity.*;
 import com.example.carnest.Enum.*;
 import com.example.carnest.Exception.BadRequestException;
 import com.example.carnest.Exception.ResourceNotFoundException;
+import com.example.carnest.Model.EventDTO;
 import com.example.carnest.Model.OrderDTO;
 import com.example.carnest.Model.ShopDTO;
 import com.example.carnest.Repository.*;
@@ -30,6 +31,7 @@ public class OrderService {
     private final UserRepository userRepository;
     private final WalletRepository walletRepository;
     private final WalletTransactionRepository walletTransactionRepository;
+    private final EventPublisher eventPublisher;
 
     private static final int AUTO_COMPLETE_DAYS = 7;
     private static final int MAX_SIZE = 50;
@@ -40,7 +42,7 @@ public class OrderService {
                         CartItemRepository cartItemRepository, ProductRepository productRepository,
                         ProductImageRepository productImageRepository, ShopRepository shopRepository,
                         UserRepository userRepository, WalletRepository walletRepository,
-                        WalletTransactionRepository walletTransactionRepository) {
+                        WalletTransactionRepository walletTransactionRepository, EventPublisher eventPublisher) {
         this.orderRepository = orderRepository;
         this.orderItemRepository = orderItemRepository;
         this.statusHistoryRepository = statusHistoryRepository;
@@ -51,6 +53,7 @@ public class OrderService {
         this.userRepository = userRepository;
         this.walletRepository = walletRepository;
         this.walletTransactionRepository = walletTransactionRepository;
+        this.eventPublisher = eventPublisher;
     }
 
     // ===== CHECKOUT — tạo đơn hàng từ giỏ =====
@@ -263,6 +266,7 @@ public class OrderService {
 
             addStatusHistory(order, null, OrderStatus.PENDING_PAYMENT, userId, "Đặt hàng — chờ thanh toán trong 5 phút");
             orders.add(toOrderResponse(order));
+            eventPublisher.publishOrderExpire(order.getId(), 5 * 60 * 1000);
         }
 
         // Xóa cart items đã checkout
@@ -488,13 +492,18 @@ public class OrderService {
         }
 
         // Cập nhật thống kê
-        User buyer = order.getBuyer();
-        buyer.setTotalBought(buyer.getTotalBought() + totalItemQty);
-        userRepository.save(buyer);
+        // Async stats update qua RabbitMQ
+        eventPublisher.publishStatsUpdate(order.getBuyer().getId(), "totalBought", totalItemQty);
+        eventPublisher.publishStatsUpdate(order.getShop().getUser().getId(), "totalSold", totalItemQty);
 
-        User seller = order.getShop().getUser();
-        seller.setTotalSold(seller.getTotalSold() + totalItemQty);
-        userRepository.save(seller);
+        // Notify seller
+        EventDTO.OrderEvent completeEvent = new EventDTO.OrderEvent();
+        completeEvent.setOrderId(order.getId());
+        completeEvent.setOrderCode(order.getOrderCode());
+        completeEvent.setSellerId(order.getShop().getUser().getId());
+        completeEvent.setTotalAmount(order.getTotalAmount());
+        completeEvent.setAction("COMPLETED");
+        eventPublisher.publishOrderEvent(completeEvent);
 
         Shop shop = order.getShop();
         shop.setTotalSold(shop.getTotalSold() + totalItemQty);
@@ -582,6 +591,15 @@ public class OrderService {
             order.setPaymentStatus(PaymentStatus.REFUNDED);
             order.setEscrowStatus(EscrowStatus.REFUNDED);
         }
+
+        EventDTO.OrderEvent cancelEvent = new EventDTO.OrderEvent();
+        cancelEvent.setOrderId(order.getId());
+        cancelEvent.setOrderCode(order.getOrderCode());
+        cancelEvent.setBuyerId(order.getBuyer().getId());
+        cancelEvent.setSellerId(order.getShop().getUser().getId());
+        cancelEvent.setBuyerUsername(order.getBuyer().getUsername());
+        cancelEvent.setAction("CANCELLED");
+        eventPublisher.publishOrderEvent(cancelEvent);
 
         addStatusHistory(order, oldStatus, OrderStatus.CANCELLED, userId,
                 "Đơn bị hủy" + (request != null && request.getCancelReason() != null ? ": " + request.getCancelReason() : ""));

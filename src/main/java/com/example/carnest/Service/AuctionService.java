@@ -5,6 +5,7 @@ import com.example.carnest.Enum.*;
 import com.example.carnest.Exception.BadRequestException;
 import com.example.carnest.Exception.ResourceNotFoundException;
 import com.example.carnest.Model.AuctionDTO;
+import com.example.carnest.Model.EventDTO;
 import com.example.carnest.Model.ShopDTO;
 import com.example.carnest.Repository.*;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -27,13 +28,14 @@ public class AuctionService {
     private final ShopRepository shopRepository;
     private final UserRepository userRepository;
     private final AuctionWebSocketService webSocketService;
+    private final EventPublisher eventPublisher;
 
     private static final int MAX_SIZE = 50;
 
     @Autowired
     public AuctionService(AuctionRepository auctionRepository, AuctionBidRepository bidRepository,
                           ProductRepository productRepository, ProductImageRepository productImageRepository,
-                          ShopRepository shopRepository, UserRepository userRepository, AuctionWebSocketService webSocketService) {
+                          ShopRepository shopRepository, UserRepository userRepository, AuctionWebSocketService webSocketService, EventPublisher eventPublisher) {
         this.auctionRepository = auctionRepository;
         this.bidRepository = bidRepository;
         this.productRepository = productRepository;
@@ -41,6 +43,7 @@ public class AuctionService {
         this.shopRepository = shopRepository;
         this.userRepository = userRepository;
         this.webSocketService = webSocketService;
+        this.eventPublisher = eventPublisher;
     }
 
     // ===== TẠO AUCTION =====
@@ -159,6 +162,22 @@ public class AuctionService {
         }
 
         auctionRepository.save(auction);
+
+        // Publish bid event async
+        EventDTO.AuctionBidEvent bidEvent = new EventDTO.AuctionBidEvent();
+        bidEvent.setAuctionId(auctionId);
+        bidEvent.setBidderId(userId);
+        bidEvent.setBidderUsername(bidder.getUsername());
+        bidEvent.setBidAmount(request.getBidAmount());
+        bidEvent.setAutoBid(false);
+        // Lấy previous winner để notify outbid
+        AuctionBid previousWinning = bidRepository.findByAuctionIdWithBidder(auctionId).stream()
+                .filter(b -> !b.getId().equals(bid.getId()) && b.getBidder() != null)
+                .findFirst().orElse(null);
+        if (previousWinning != null) {
+            bidEvent.setPreviousWinnerId(previousWinning.getBidder().getId());
+        }
+        eventPublisher.publishAuctionBid(bidEvent);
 
         sendAuctionUpdate(auction);
 

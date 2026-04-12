@@ -46,7 +46,7 @@ public class OrderScheduler {
     @Autowired
     private AuctionWebSocketService auctionWebSocketService;
 
-    @Scheduled(fixedRate = 30000)
+    @Scheduled(fixedRate = 300000)
     @Transactional
     public void expirePendingPaymentOrders() {
         List<Order> expired = orderRepository.findExpiredPendingPayment(LocalDateTime.now());

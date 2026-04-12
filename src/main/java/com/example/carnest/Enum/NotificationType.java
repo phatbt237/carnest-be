@@ -8,6 +8,7 @@ public enum NotificationType {
     ORDER_DELIVERED,
     ORDER_COMPLETED,
     ORDER_CANCELLED,
+    ESCROW_RELEASED,
 
     // Đấu giá
     BID_PLACED,
