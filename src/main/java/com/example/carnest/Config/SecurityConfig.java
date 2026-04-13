@@ -46,8 +46,10 @@ public class SecurityConfig {
 
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
+//        http
+//                .cors(Customizer.withDefaults())
         http
-                .cors(Customizer.withDefaults())
+                .cors(cors -> cors.configurationSource(corsConfigurationSource()))
                 .csrf(AbstractHttpConfigurer::disable)
                 .authorizeHttpRequests(req -> req
                         // Public - không cần đăng nhập
@@ -101,20 +103,6 @@ public class SecurityConfig {
 
         return http.build();
     }
-
-//    @Bean
-//    public UrlBasedCorsConfigurationSource corsConfigurationSource() {
-//        CorsConfiguration config = new CorsConfiguration();
-//        config.setAllowedOrigins(List.of("http://localhost:3000", "http://localhost:5173", "https://carnest-be-production.up.railway.app"));
-//        config.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"));
-//        config.setAllowedHeaders(List.of("Authorization", "Content-Type"));
-//        config.setAllowCredentials(true);
-//        config.setMaxAge(3600L);
-//
-//        UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
-//        source.registerCorsConfiguration("/**", config);
-//        return source;
-//    }
 
     @Bean
     public UrlBasedCorsConfigurationSource corsConfigurationSource() {
