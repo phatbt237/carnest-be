@@ -82,6 +82,7 @@ public class ChatService {
             Map<String, Object> m = new HashMap<>();
             m.put("id", c.getId());
             User other = c.getUser1().getId().equals(userId) ? c.getUser2() : c.getUser1();
+            m.put("otherUserId", other.getId());
             m.put("otherUsername", other.getUsername());
             m.put("otherAvatar", other.getAvatarUrl());
             m.put("lastMessage", c.getLastMessagePreview());

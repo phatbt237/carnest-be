@@ -120,7 +120,7 @@ public class ShopDTO {
         private BigDecimal ratingAvg;
         private Boolean isVerified;
         private Boolean isFollowing;
-        private OwnerInfo owner;
+//        private OwnerInfo owner;
         private LocalDateTime createdAt;
 
         public ShopResponse() {}
@@ -153,8 +153,8 @@ public class ShopDTO {
         public void setIsVerified(Boolean isVerified) { this.isVerified = isVerified; }
         public Boolean getIsFollowing() { return isFollowing; }
         public void setIsFollowing(Boolean isFollowing) { this.isFollowing = isFollowing; }
-        public OwnerInfo getOwner() { return owner; }
-        public void setOwner(OwnerInfo owner) { this.owner = owner; }
+//        public OwnerInfo getOwner() { return owner; }
+//        public void setOwner(OwnerInfo owner) { this.owner = owner; }
         public LocalDateTime getCreatedAt() { return createdAt; }
         public void setCreatedAt(LocalDateTime createdAt) { this.createdAt = createdAt; }
     }

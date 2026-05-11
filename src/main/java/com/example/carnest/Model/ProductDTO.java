@@ -243,6 +243,8 @@ public class ProductDTO {
         private String shopName;
         private String shopSlug;
         private String brandName;
+        private Integer soldCount;
+        private Integer quantity;
         private LocalDateTime createdAt;
 
         public ProductSummary() {}
@@ -273,6 +275,10 @@ public class ProductDTO {
         public void setShopSlug(String shopSlug) { this.shopSlug = shopSlug; }
         public String getBrandName() { return brandName; }
         public void setBrandName(String brandName) { this.brandName = brandName; }
+        public Integer getSoldCount() { return soldCount; }
+        public void setSoldCount(Integer soldCount) { this.soldCount = soldCount; }
+        public Integer getQuantity() { return quantity; }
+        public void setQuantity(Integer quantity) { this.quantity = quantity; }
         public LocalDateTime getCreatedAt() { return createdAt; }
         public void setCreatedAt(LocalDateTime createdAt) { this.createdAt = createdAt; }
     }

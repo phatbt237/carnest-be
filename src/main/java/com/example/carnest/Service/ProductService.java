@@ -413,6 +413,8 @@ public class ProductService {
         s.setIsVerified(p.getIsVerified());
         s.setFreeShipping(p.getFreeShipping());
         s.setCreatedAt(p.getCreatedAt());
+        s.setSoldCount(p.getSoldCount());
+        s.setQuantity(p.getQuantity());
 
         // Shop info (already JOIN FETCH)
         s.setShopName(p.getShop().getShopName());

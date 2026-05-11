@@ -373,21 +373,21 @@ public class ShopService {
         response.setTotalProducts(shop.getTotalProducts());
         response.setTotalSold(shop.getTotalSold());
         response.setFollowerCount(shop.getFollowerCount());
-        response.setRatingAvg(shop.getRatingAvg());
+        response.setRatingAvg(shop.getUser().getSellerRatingAvg());
         response.setIsVerified(shop.getIsVerified());
         response.setIsFollowing(isFollowing);
         response.setCreatedAt(shop.getCreatedAt());
 
         // User đã được JOIN FETCH — không gây thêm query
-        User owner = shop.getUser();
-        ShopDTO.OwnerInfo ownerInfo = new ShopDTO.OwnerInfo();
-        ownerInfo.setId(owner.getId());
-        ownerInfo.setUsername(owner.getUsername());
-        ownerInfo.setFullName(owner.getFullName());
-        ownerInfo.setAvatarUrl(owner.getAvatarUrl());
-        ownerInfo.setSellerRatingAvg(owner.getSellerRatingAvg());
-        ownerInfo.setTotalSold(owner.getTotalSold());
-        response.setOwner(ownerInfo);
+//        User owner = shop.getUser();
+//        ShopDTO.OwnerInfo ownerInfo = new ShopDTO.OwnerInfo();
+//        ownerInfo.setId(owner.getId());
+//        ownerInfo.setUsername(owner.getUsername());
+//        ownerInfo.setFullName(owner.getFullName());
+//        ownerInfo.setAvatarUrl(owner.getAvatarUrl());
+//        ownerInfo.setSellerRatingAvg(owner.getSellerRatingAvg());
+//        ownerInfo.setTotalSold(owner.getTotalSold());
+//        response.setOwner(ownerInfo);
 
         return response;
     }
@@ -401,7 +401,7 @@ public class ShopService {
         summary.setLogoUrl(shop.getLogoUrl());
         summary.setTotalProducts(shop.getTotalProducts());
         summary.setFollowerCount(shop.getFollowerCount());
-        summary.setRatingAvg(shop.getRatingAvg());
+        summary.setRatingAvg(shop.getUser().getSellerRatingAvg());
         summary.setIsVerified(shop.getIsVerified());
         summary.setIsFollowing(isFollowing);
         return summary;
