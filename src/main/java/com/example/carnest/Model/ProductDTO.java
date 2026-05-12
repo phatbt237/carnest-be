@@ -245,6 +245,7 @@ public class ProductDTO {
         private String brandName;
         private Integer soldCount;
         private Integer quantity;
+        private Integer viewCount;
         private LocalDateTime createdAt;
 
         public ProductSummary() {}
@@ -279,6 +280,8 @@ public class ProductDTO {
         public void setSoldCount(Integer soldCount) { this.soldCount = soldCount; }
         public Integer getQuantity() { return quantity; }
         public void setQuantity(Integer quantity) { this.quantity = quantity; }
+        public Integer getViewCount() { return viewCount; }
+        public void setViewCount(Integer viewCount) { this.viewCount = viewCount; }
         public LocalDateTime getCreatedAt() { return createdAt; }
         public void setCreatedAt(LocalDateTime createdAt) { this.createdAt = createdAt; }
     }

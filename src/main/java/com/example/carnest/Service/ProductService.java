@@ -415,6 +415,7 @@ public class ProductService {
         s.setCreatedAt(p.getCreatedAt());
         s.setSoldCount(p.getSoldCount());
         s.setQuantity(p.getQuantity());
+        s.setViewCount(p.getViewCount());
 
         // Shop info (already JOIN FETCH)
         s.setShopName(p.getShop().getShopName());
