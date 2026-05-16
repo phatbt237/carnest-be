@@ -2,6 +2,7 @@ package com.example.carnest.Service;
 
 import com.example.carnest.Entity.*;
 import com.example.carnest.Enum.ProductStatus;
+import com.example.carnest.Model.EventDTO;
 import com.example.carnest.Enum.TradeStatus;
 import com.example.carnest.Exception.BadRequestException;
 import com.example.carnest.Exception.ResourceNotFoundException;
@@ -23,6 +24,7 @@ public class TradeService {
     @Autowired private TradeOfferItemRepository tradeOfferItemRepository;
     @Autowired private ProductRepository productRepository;
     @Autowired private UserRepository userRepository;
+    @Autowired private EventPublisher eventPublisher;
 
     @Transactional
     public TradeDTO.TradeResponse create(Long userId, TradeDTO.CreateRequest request) {
@@ -69,6 +71,7 @@ public class TradeService {
             tradeOfferItemRepository.save(item);
         }
 
+        eventPublisher.publishTradeEvent(buildTradeEvent(trade, "PROPOSED"));
         return toResponse(trade);
     }
 
@@ -80,6 +83,7 @@ public class TradeService {
         trade.setStatus(TradeStatus.ACCEPTED);
         trade.setRespondedAt(LocalDateTime.now());
         tradeOfferRepository.save(trade);
+        eventPublisher.publishTradeEvent(buildTradeEvent(trade, "ACCEPTED"));
         return toResponse(trade);
     }
 
@@ -91,6 +95,7 @@ public class TradeService {
         trade.setStatus(TradeStatus.REJECTED);
         trade.setRespondedAt(LocalDateTime.now());
         tradeOfferRepository.save(trade);
+        eventPublisher.publishTradeEvent(buildTradeEvent(trade, "REJECTED"));
         return toResponse(trade);
     }
 
@@ -106,6 +111,7 @@ public class TradeService {
         }
         trade.setStatus(TradeStatus.CANCELLED);
         tradeOfferRepository.save(trade);
+        eventPublisher.publishTradeEvent(buildTradeEvent(trade, "CANCELLED"));
     }
 
     public List<TradeDTO.TradeResponse> getMyTrades(Long userId) {
@@ -116,6 +122,18 @@ public class TradeService {
     public List<TradeDTO.TradeResponse> getReceivedTrades(Long userId) {
         return tradeOfferRepository.findByReceiverId(userId).stream()
                 .map(this::toResponse).collect(Collectors.toList());
+    }
+
+    private EventDTO.TradeEvent buildTradeEvent(TradeOffer trade, String action) {
+        EventDTO.TradeEvent event = new EventDTO.TradeEvent();
+        event.setTradeId(trade.getId());
+        event.setOffererId(trade.getOfferer().getId());
+        event.setReceiverId(trade.getReceiver().getId());
+        event.setOffererUsername(trade.getOfferer().getUsername());
+        event.setReceiverUsername(trade.getReceiver().getUsername());
+        event.setTargetProductName(trade.getTargetProduct().getName());
+        event.setAction(action);
+        return event;
     }
 
     private TradeOffer getTradeForReceiver(Long userId, Long tradeId) {

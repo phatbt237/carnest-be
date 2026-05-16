@@ -108,6 +108,68 @@ public class EventDTO {
         public void setPreviousWinnerId(Long previousWinnerId) { this.previousWinnerId = previousWinnerId; }
     }
 
+    // ===== OFFER EVENT =====
+    public static class OfferEvent implements Serializable {
+        private Long offerId;
+        private Long buyerId;
+        private Long sellerId;
+        private String buyerUsername;
+        private String sellerUsername;
+        private String productName;
+        private BigDecimal offerPrice;
+        private BigDecimal counterPrice;
+        private String action; // RECEIVED, ACCEPTED, REJECTED, COUNTERED, COUNTER_ACCEPTED, CANCELLED
+
+        public OfferEvent() {}
+
+        public Long getOfferId() { return offerId; }
+        public void setOfferId(Long offerId) { this.offerId = offerId; }
+        public Long getBuyerId() { return buyerId; }
+        public void setBuyerId(Long buyerId) { this.buyerId = buyerId; }
+        public Long getSellerId() { return sellerId; }
+        public void setSellerId(Long sellerId) { this.sellerId = sellerId; }
+        public String getBuyerUsername() { return buyerUsername; }
+        public void setBuyerUsername(String buyerUsername) { this.buyerUsername = buyerUsername; }
+        public String getSellerUsername() { return sellerUsername; }
+        public void setSellerUsername(String sellerUsername) { this.sellerUsername = sellerUsername; }
+        public String getProductName() { return productName; }
+        public void setProductName(String productName) { this.productName = productName; }
+        public BigDecimal getOfferPrice() { return offerPrice; }
+        public void setOfferPrice(BigDecimal offerPrice) { this.offerPrice = offerPrice; }
+        public BigDecimal getCounterPrice() { return counterPrice; }
+        public void setCounterPrice(BigDecimal counterPrice) { this.counterPrice = counterPrice; }
+        public String getAction() { return action; }
+        public void setAction(String action) { this.action = action; }
+    }
+
+    // ===== TRADE EVENT =====
+    public static class TradeEvent implements Serializable {
+        private Long tradeId;
+        private Long offererId;
+        private Long receiverId;
+        private String offererUsername;
+        private String receiverUsername;
+        private String targetProductName;
+        private String action; // PROPOSED, ACCEPTED, REJECTED, CANCELLED
+
+        public TradeEvent() {}
+
+        public Long getTradeId() { return tradeId; }
+        public void setTradeId(Long tradeId) { this.tradeId = tradeId; }
+        public Long getOffererId() { return offererId; }
+        public void setOffererId(Long offererId) { this.offererId = offererId; }
+        public Long getReceiverId() { return receiverId; }
+        public void setReceiverId(Long receiverId) { this.receiverId = receiverId; }
+        public String getOffererUsername() { return offererUsername; }
+        public void setOffererUsername(String offererUsername) { this.offererUsername = offererUsername; }
+        public String getReceiverUsername() { return receiverUsername; }
+        public void setReceiverUsername(String receiverUsername) { this.receiverUsername = receiverUsername; }
+        public String getTargetProductName() { return targetProductName; }
+        public void setTargetProductName(String targetProductName) { this.targetProductName = targetProductName; }
+        public String getAction() { return action; }
+        public void setAction(String action) { this.action = action; }
+    }
+
     // ===== STATS UPDATE EVENT =====
     public static class StatsEvent implements Serializable {
         private Long userId;

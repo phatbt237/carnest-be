@@ -46,6 +46,18 @@ public class ShowcaseController {
                 .message(showcaseService.toggleLike(u.getUserId(), id)).build());
     }
 
+    @GetMapping
+    @Operation(summary = "Danh sách tủ trưng bày công khai")
+    public ResponseEntity<AuthDTO.MessageResponse> getPublicShowcases(
+            @RequestParam(defaultValue = "newest") String sortBy,
+            @RequestParam(required = false) String cursor,
+            @RequestParam(defaultValue = "12") int size,
+            @AuthenticationPrincipal CustomUserDetails u) {
+        Long uid = u != null ? u.getUserId() : null;
+        return ResponseEntity.ok(AuthDTO.MessageResponse.builder().status(200).message("Thành công")
+                .data(showcaseService.getPublicShowcases(sortBy, cursor, size, uid)).build());
+    }
+
     @GetMapping("/user/{userId}")
     @Operation(summary = "Tủ trưng bày của user (public)")
     public ResponseEntity<AuthDTO.MessageResponse> userShowcases(@PathVariable Long userId) {

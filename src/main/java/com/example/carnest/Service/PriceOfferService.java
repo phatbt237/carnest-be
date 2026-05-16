@@ -4,6 +4,7 @@ import com.example.carnest.Entity.*;
 import com.example.carnest.Enum.*;
 import com.example.carnest.Exception.BadRequestException;
 import com.example.carnest.Exception.ResourceNotFoundException;
+import com.example.carnest.Model.EventDTO;
 import com.example.carnest.Model.PriceOfferDTO;
 import com.example.carnest.Model.ShopDTO;
 import com.example.carnest.Repository.*;
@@ -35,6 +36,7 @@ public class PriceOfferService {
     private final OrderItemRepository orderItemRepository;
     private final OrderStatusHistoryRepository statusHistoryRepository;
     private final ShopRepository shopRepository;
+    private final EventPublisher eventPublisher;
 
     private static final int OFFER_EXPIRE_HOURS = 48;
     private static final int MAX_SIZE = 50;
@@ -43,7 +45,8 @@ public class PriceOfferService {
     public PriceOfferService(PriceOfferRepository offerRepository, ProductRepository productRepository,
                              ProductImageRepository productImageRepository, UserRepository userRepository,
                              OrderRepository orderRepository, OrderItemRepository orderItemRepository,
-                             OrderStatusHistoryRepository statusHistoryRepository, ShopRepository shopRepository) {
+                             OrderStatusHistoryRepository statusHistoryRepository, ShopRepository shopRepository,
+                             EventPublisher eventPublisher) {
         this.offerRepository = offerRepository;
         this.productRepository = productRepository;
         this.productImageRepository = productImageRepository;
@@ -52,6 +55,7 @@ public class PriceOfferService {
         this.orderItemRepository = orderItemRepository;
         this.statusHistoryRepository = statusHistoryRepository;
         this.shopRepository = shopRepository;
+        this.eventPublisher = eventPublisher;
     }
 
     // ===== GỬI OFFER =====
@@ -89,6 +93,7 @@ public class PriceOfferService {
         offer.setExpiresAt(LocalDateTime.now().plusHours(OFFER_EXPIRE_HOURS));
 
         offer = offerRepository.save(offer);
+        eventPublisher.publishOfferEvent(buildOfferEvent(offer, "RECEIVED"));
         return toOfferResponse(offer);
     }
 
@@ -104,7 +109,7 @@ public class PriceOfferService {
 
         // Tự động tạo order với giá offer
         createOrderFromOffer(offer);
-
+        eventPublisher.publishOfferEvent(buildOfferEvent(offer, "ACCEPTED"));
         return toOfferResponse(offer);
     }
 
@@ -117,6 +122,7 @@ public class PriceOfferService {
         offer.setStatus(OfferStatus.REJECTED);
         offer.setRespondedAt(LocalDateTime.now());
         offerRepository.save(offer);
+        eventPublisher.publishOfferEvent(buildOfferEvent(offer, "REJECTED"));
         return toOfferResponse(offer);
     }
 
@@ -131,6 +137,7 @@ public class PriceOfferService {
         offer.setRespondedAt(LocalDateTime.now());
         offer.setExpiresAt(LocalDateTime.now().plusHours(OFFER_EXPIRE_HOURS)); // reset deadline
         offerRepository.save(offer);
+        eventPublisher.publishOfferEvent(buildOfferEvent(offer, "COUNTERED"));
         return toOfferResponse(offer);
     }
 
@@ -153,7 +160,7 @@ public class PriceOfferService {
 
         // Tự động tạo order với giá counter
         createOrderFromOffer(offer);
-
+        eventPublisher.publishOfferEvent(buildOfferEvent(offer, "COUNTER_ACCEPTED"));
         return toOfferResponse(offer);
     }
 
@@ -171,6 +178,7 @@ public class PriceOfferService {
 
         offer.setStatus(OfferStatus.CANCELLED);
         offerRepository.save(offer);
+        eventPublisher.publishOfferEvent(buildOfferEvent(offer, "CANCELLED"));
         return toOfferResponse(offer);
     }
 
@@ -209,6 +217,20 @@ public class PriceOfferService {
     }
 
     // ===== HELPERS =====
+    private EventDTO.OfferEvent buildOfferEvent(PriceOffer offer, String action) {
+        EventDTO.OfferEvent event = new EventDTO.OfferEvent();
+        event.setOfferId(offer.getId());
+        event.setBuyerId(offer.getBuyer().getId());
+        event.setSellerId(offer.getSeller().getId());
+        event.setBuyerUsername(offer.getBuyer().getUsername());
+        event.setSellerUsername(offer.getSeller().getUsername());
+        event.setProductName(offer.getProduct().getName());
+        event.setOfferPrice(offer.getOfferPrice());
+        event.setCounterPrice(offer.getCounterPrice());
+        event.setAction(action);
+        return event;
+    }
+
     private PriceOffer getOfferForSeller(Long sellerId, Long offerId) {
         PriceOffer offer = offerRepository.findByIdFull(offerId)
                 .orElseThrow(() -> new ResourceNotFoundException("Offer", "id", offerId));

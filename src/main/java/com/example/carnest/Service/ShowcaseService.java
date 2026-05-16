@@ -7,6 +7,8 @@ import com.example.carnest.Model.ShopDTO;
 import com.example.carnest.Model.ShowcaseDTO;
 import com.example.carnest.Repository.*;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -79,6 +81,61 @@ public class ShowcaseService {
             showcaseRepository.save(sc);
             return "Đã thích";
         }
+    }
+
+    private static final int MAX_SIZE = 50;
+
+    public ShopDTO.CursorPage<Map<String, Object>> getPublicShowcases(String sortBy, String cursor, int size, Long currentUserId) {
+        size = Math.min(Math.max(size, 1), MAX_SIZE);
+        Pageable pageable = PageRequest.of(0, size + 1);
+
+        List<Showcase> showcases;
+        if ("popular".equals(sortBy)) {
+            if (cursor == null || cursor.isEmpty()) {
+                showcases = showcaseRepository.findPublicPopular(pageable);
+            } else {
+                String[] parts = cursor.split("_");
+                showcases = showcaseRepository.findPublicPopularAfterCursor(
+                        Integer.parseInt(parts[0]), Long.parseLong(parts[1]), pageable);
+            }
+        } else if ("mostViewed".equals(sortBy)) {
+            if (cursor == null || cursor.isEmpty()) {
+                showcases = showcaseRepository.findPublicMostViewed(pageable);
+            } else {
+                String[] parts = cursor.split("_");
+                showcases = showcaseRepository.findPublicMostViewedAfterCursor(
+                        Integer.parseInt(parts[0]), Long.parseLong(parts[1]), pageable);
+            }
+        } else {
+            if (cursor == null || cursor.isEmpty()) {
+                showcases = showcaseRepository.findPublicNewest(pageable);
+            } else {
+                showcases = showcaseRepository.findPublicNewestAfterCursor(Long.parseLong(cursor), pageable);
+            }
+        }
+
+        boolean hasMore = showcases.size() > size;
+        if (hasMore) showcases = showcases.subList(0, size);
+
+        List<Map<String, Object>> items = showcases.stream().map(sc -> {
+            boolean isLiked = currentUserId != null && showcaseLikeRepository.existsByShowcaseIdAndUserId(sc.getId(), currentUserId);
+            return toMap(sc, isLiked);
+        }).collect(Collectors.toList());
+
+        String nextCursor = null;
+        if (hasMore && !showcases.isEmpty()) {
+            Showcase last = showcases.get(showcases.size() - 1);
+            if ("popular".equals(sortBy)) {
+                nextCursor = last.getLikeCount() + "_" + last.getId();
+            } else if ("mostViewed".equals(sortBy)) {
+                nextCursor = last.getViewCount() + "_" + last.getId();
+            } else {
+                nextCursor = String.valueOf(last.getId());
+            }
+        }
+
+        Long total = showcaseRepository.countPublic();
+        return new ShopDTO.CursorPage<>(items, nextCursor, hasMore, items.size(), total);
     }
 
     public List<Map<String, Object>> getUserShowcases(Long userId) {

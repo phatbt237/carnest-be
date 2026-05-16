@@ -66,6 +66,18 @@ public class EventPublisher {
                 RabbitMQConfig.RK_AUCTION_ENDED, event);
     }
 
+    // ===== OFFER =====
+    public void publishOfferEvent(EventDTO.OfferEvent event) {
+        rabbitTemplate.convertAndSend(RabbitMQConfig.EXCHANGE_NOTIFICATION,
+                RabbitMQConfig.RK_OFFER_NOTIFICATION, event);
+    }
+
+    // ===== TRADE =====
+    public void publishTradeEvent(EventDTO.TradeEvent event) {
+        rabbitTemplate.convertAndSend(RabbitMQConfig.EXCHANGE_NOTIFICATION,
+                RabbitMQConfig.RK_TRADE_NOTIFICATION, event);
+    }
+
     // ===== STATS =====
     public void publishStatsUpdate(Long userId, String field, int increment) {
         EventDTO.StatsEvent event = new EventDTO.StatsEvent(userId, field, increment);

@@ -140,6 +140,90 @@ public class EventConsumer {
         }
     }
 
+    // ===== OFFER NOTIFICATION =====
+    @RabbitListener(queues = RabbitMQConfig.QUEUE_OFFER_NOTIFICATION)
+    public void handleOfferNotification(EventDTO.OfferEvent event) {
+        try {
+            switch (event.getAction()) {
+                case "RECEIVED":
+                    notificationService.send(event.getSellerId(), NotificationType.OFFER_RECEIVED,
+                            "Đề xuất giá mới cho \"" + event.getProductName() + "\"",
+                            event.getBuyerUsername() + " đề xuất " + event.getOfferPrice() + " VNĐ",
+                            "OFFER", event.getOfferId());
+                    break;
+                case "ACCEPTED":
+                    notificationService.send(event.getBuyerId(), NotificationType.OFFER_ACCEPTED,
+                            "Đề xuất giá được chấp nhận!",
+                            event.getSellerUsername() + " đã chấp nhận giá " + event.getOfferPrice() + " VNĐ cho \"" + event.getProductName() + "\"",
+                            "OFFER", event.getOfferId());
+                    break;
+                case "REJECTED":
+                    notificationService.send(event.getBuyerId(), NotificationType.OFFER_REJECTED,
+                            "Đề xuất giá bị từ chối",
+                            event.getSellerUsername() + " đã từ chối đề xuất giá của bạn cho \"" + event.getProductName() + "\"",
+                            "OFFER", event.getOfferId());
+                    break;
+                case "COUNTERED":
+                    notificationService.send(event.getBuyerId(), NotificationType.OFFER_COUNTERED,
+                            "Người bán đề xuất giá lại",
+                            event.getSellerUsername() + " đề xuất giá " + event.getCounterPrice() + " VNĐ cho \"" + event.getProductName() + "\"",
+                            "OFFER", event.getOfferId());
+                    break;
+                case "COUNTER_ACCEPTED":
+                    notificationService.send(event.getSellerId(), NotificationType.OFFER_ACCEPTED,
+                            "Người mua đồng ý giá counter!",
+                            event.getBuyerUsername() + " đã chấp nhận giá " + event.getOfferPrice() + " VNĐ cho \"" + event.getProductName() + "\"",
+                            "OFFER", event.getOfferId());
+                    break;
+                case "CANCELLED":
+                    notificationService.send(event.getSellerId(), NotificationType.OFFER_CANCELLED,
+                            "Người mua đã hủy đề xuất giá",
+                            event.getBuyerUsername() + " đã hủy đề xuất giá cho \"" + event.getProductName() + "\"",
+                            "OFFER", event.getOfferId());
+                    break;
+            }
+            System.out.println("[Consumer] Offer event: " + event.getAction() + " offerId=" + event.getOfferId());
+        } catch (Exception e) {
+            System.err.println("[Consumer] Offer notification error: " + e.getMessage());
+        }
+    }
+
+    // ===== TRADE NOTIFICATION =====
+    @RabbitListener(queues = RabbitMQConfig.QUEUE_TRADE_NOTIFICATION)
+    public void handleTradeNotification(EventDTO.TradeEvent event) {
+        try {
+            switch (event.getAction()) {
+                case "PROPOSED":
+                    notificationService.send(event.getReceiverId(), NotificationType.TRADE_PROPOSED,
+                            "Đề xuất đổi xe mới",
+                            event.getOffererUsername() + " muốn đổi xe lấy \"" + event.getTargetProductName() + "\"",
+                            "TRADE", event.getTradeId());
+                    break;
+                case "ACCEPTED":
+                    notificationService.send(event.getOffererId(), NotificationType.TRADE_ACCEPTED,
+                            "Đề xuất đổi xe được chấp nhận!",
+                            event.getReceiverUsername() + " đã chấp nhận đề xuất đổi xe của bạn cho \"" + event.getTargetProductName() + "\"",
+                            "TRADE", event.getTradeId());
+                    break;
+                case "REJECTED":
+                    notificationService.send(event.getOffererId(), NotificationType.TRADE_REJECTED,
+                            "Đề xuất đổi xe bị từ chối",
+                            event.getReceiverUsername() + " đã từ chối đề xuất đổi xe của bạn cho \"" + event.getTargetProductName() + "\"",
+                            "TRADE", event.getTradeId());
+                    break;
+                case "CANCELLED":
+                    notificationService.send(event.getReceiverId(), NotificationType.TRADE_CANCELLED,
+                            "Đề xuất đổi xe đã bị hủy",
+                            event.getOffererUsername() + " đã hủy đề xuất đổi xe cho \"" + event.getTargetProductName() + "\"",
+                            "TRADE", event.getTradeId());
+                    break;
+            }
+            System.out.println("[Consumer] Trade event: " + event.getAction() + " tradeId=" + event.getTradeId());
+        } catch (Exception e) {
+            System.err.println("[Consumer] Trade notification error: " + e.getMessage());
+        }
+    }
+
     // ===== STATS UPDATE — cập nhật thống kê async =====
     @RabbitListener(queues = RabbitMQConfig.QUEUE_STATS_UPDATE)
     @Transactional

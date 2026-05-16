@@ -23,12 +23,14 @@ public enum NotificationType {
     OFFER_ACCEPTED,
     OFFER_REJECTED,
     OFFER_COUNTERED,
+    OFFER_CANCELLED,
     OFFER_EXPIRED,
 
     // Trade / Đổi xe
     TRADE_PROPOSED,
     TRADE_ACCEPTED,
     TRADE_REJECTED,
+    TRADE_CANCELLED,
     TRADE_COMPLETED,
 
     // Want list
