@@ -606,6 +606,28 @@ public class OrderService {
         return toOrderResponse(order);
     }
 
+    // ===== LỊCH SỬ TRẠNG THÁI ĐƠN =====
+    public List<OrderDTO.StatusHistoryInfo> getOrderHistory(Long userId, Long orderId) {
+        Order order = orderRepository.findByIdFull(orderId)
+                .orElseThrow(() -> new ResourceNotFoundException("Order", "id", orderId));
+
+        boolean isBuyer = order.getBuyer().getId().equals(userId);
+        boolean isSeller = order.getShop().getUser().getId().equals(userId);
+        if (!isBuyer && !isSeller) {
+            throw new BadRequestException("Bạn không có quyền xem đơn hàng này");
+        }
+
+        return statusHistoryRepository.findByOrderIdOrderByCreatedAtAsc(orderId).stream().map(h -> {
+            OrderDTO.StatusHistoryInfo info = new OrderDTO.StatusHistoryInfo();
+            info.setFromStatus(h.getFromStatus());
+            info.setToStatus(h.getToStatus());
+            info.setChangedBy(h.getChangedBy() != null ? h.getChangedBy().getUsername() : null);
+            info.setNote(h.getNote());
+            info.setCreatedAt(h.getCreatedAt());
+            return info;
+        }).collect(Collectors.toList());
+    }
+
     // ===== HELPERS =====
     private Order getOrderForSeller(Long userId, Long orderId) {
         Order order = orderRepository.findByIdFull(orderId)
@@ -676,6 +698,7 @@ public class OrderService {
         r.setBuyerNote(o.getBuyerNote());
         r.setSellerNote(o.getSellerNote());
         r.setCancelReason(o.getCancelReason());
+        r.setPaymentDeadline(o.getPaymentDeadline());
         r.setCreatedAt(o.getCreatedAt());
         r.setPaidAt(o.getPaidAt());
         r.setShippedAt(o.getShippedAt());
@@ -713,14 +736,14 @@ public class OrderService {
         bs.setId(buyer.getId()); bs.setUsername(buyer.getUsername()); bs.setFullName(buyer.getFullName());
         r.setBuyer(bs);
 
-        // Status history
-        List<OrderStatusHistory> history = statusHistoryRepository.findByOrderIdOrderByCreatedAtAsc(o.getId());
-        r.setStatusHistory(history.stream().map(h -> {
-            OrderDTO.StatusHistoryInfo hi = new OrderDTO.StatusHistoryInfo();
-            hi.setFromStatus(h.getFromStatus()); hi.setToStatus(h.getToStatus());
-            hi.setNote(h.getNote()); hi.setCreatedAt(h.getCreatedAt());
-            return hi;
-        }).collect(Collectors.toList()));
+//        // Status history
+//        List<OrderStatusHistory> history = statusHistoryRepository.findByOrderIdOrderByCreatedAtAsc(o.getId());
+//        r.setStatusHistory(history.stream().map(h -> {
+//            OrderDTO.StatusHistoryInfo hi = new OrderDTO.StatusHistoryInfo();
+//            hi.setFromStatus(h.getFromStatus()); hi.setToStatus(h.getToStatus());
+//            hi.setNote(h.getNote()); hi.setCreatedAt(h.getCreatedAt());
+//            return hi;
+//        }).collect(Collectors.toList()));
 
         return r;
     }

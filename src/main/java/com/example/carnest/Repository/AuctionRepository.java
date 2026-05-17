@@ -64,4 +64,11 @@ public interface AuctionRepository extends JpaRepository<Auction, Long> {
 
     @Query("SELECT COUNT(a) FROM Auction a WHERE a.status = :status")
     Long countByStatus(@Param("status") AuctionStatus status);
+
+    // ===== ADMIN REPORT =====
+    @Query("SELECT COALESCE(SUM(a.currentPrice), 0) FROM Auction a WHERE a.status = 'ENDED'")
+    java.math.BigDecimal sumEndedAuctionValue();
+
+    @Query("SELECT a.status, COUNT(a) FROM Auction a GROUP BY a.status")
+    List<Object[]> countGroupByStatus();
 }

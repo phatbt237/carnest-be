@@ -159,6 +159,17 @@ public class OrderController {
                 .data(orderService.cancelOrder(userDetails.getUserId(), id, request)).build());
     }
 
+    // ===== LỊCH SỬ TRẠNG THÁI ĐƠN =====
+    @GetMapping("/{id}/history")
+    @Operation(summary = "Lịch sử trạng thái đơn hàng", description = "Buyer hoặc Seller của đơn mới xem được")
+    public ResponseEntity<AuthDTO.MessageResponse> getOrderHistory(
+            @AuthenticationPrincipal CustomUserDetails userDetails,
+            @PathVariable Long id) {
+        return ResponseEntity.ok(AuthDTO.MessageResponse.builder()
+                .status(200).message("Thành công")
+                .data(orderService.getOrderHistory(userDetails.getUserId(), id)).build());
+    }
+
     // ===== XEM SỐ DƯ VÍ =====
     @GetMapping("/wallet")
     @Operation(summary = "Xem số dư ví")

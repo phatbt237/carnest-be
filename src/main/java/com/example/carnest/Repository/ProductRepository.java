@@ -156,4 +156,29 @@ public interface ProductRepository extends JpaRepository<Product, Long> {
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("SELECT p FROM Product p WHERE p.id = :id")
     Optional<Product> findByIdForUpdate(@Param("id") Long id);
+
+    // ===== ADMIN REPORT =====
+    @Query("SELECT COUNT(p) FROM Product p WHERE p.status = :status")
+    Long countByStatus(@Param("status") ProductStatus status);
+
+    @Query("SELECT COUNT(p) FROM Product p WHERE p.createdAt BETWEEN :from AND :to")
+    Long countNewProducts(@Param("from") java.time.LocalDateTime from, @Param("to") java.time.LocalDateTime to);
+
+    // Top sản phẩm bán chạy
+    @Query("SELECT p.id, p.name, p.soldCount, p.viewCount, p.price, p.shop.shopName " +
+           "FROM Product p ORDER BY p.soldCount DESC")
+    List<Object[]> topBySoldCount(@Param("limit") int limit);
+
+    // Top sản phẩm được xem nhiều
+    @Query("SELECT p.id, p.name, p.soldCount, p.viewCount, p.price, p.shop.shopName " +
+           "FROM Product p WHERE p.status = 'ACTIVE' ORDER BY p.viewCount DESC")
+    List<Object[]> topByViewCount(@Param("limit") int limit);
+
+    // Phân bổ sản phẩm theo trạng thái
+    @Query("SELECT p.status, COUNT(p) FROM Product p GROUP BY p.status")
+    List<Object[]> countGroupByStatus();
+
+    // Phân bổ sản phẩm theo category
+    @Query("SELECT c.name, COUNT(p) FROM Product p LEFT JOIN p.category c GROUP BY c.name ORDER BY 2 DESC")
+    List<Object[]> countGroupByCategory();
 }

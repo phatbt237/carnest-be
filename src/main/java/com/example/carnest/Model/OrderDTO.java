@@ -64,7 +64,8 @@ public class OrderDTO {
         private List<OrderItemInfo> items;
         private ShopSummary shop;
         private BuyerSummary buyer;
-        private List<StatusHistoryInfo> statusHistory;
+        private LocalDateTime paymentDeadline;
+//        private List<StatusHistoryInfo> statusHistory;
         private LocalDateTime createdAt;
         private LocalDateTime paidAt;
         private LocalDateTime shippedAt;
@@ -116,8 +117,10 @@ public class OrderDTO {
         public void setShop(ShopSummary shop) { this.shop = shop; }
         public BuyerSummary getBuyer() { return buyer; }
         public void setBuyer(BuyerSummary buyer) { this.buyer = buyer; }
-        public List<StatusHistoryInfo> getStatusHistory() { return statusHistory; }
-        public void setStatusHistory(List<StatusHistoryInfo> statusHistory) { this.statusHistory = statusHistory; }
+        public LocalDateTime getPaymentDeadline(){ return paymentDeadline; };
+        public void setPaymentDeadline(LocalDateTime paymentDeadline){ this.paymentDeadline = paymentDeadline; }
+//        public List<StatusHistoryInfo> getStatusHistory() { return statusHistory; }
+//        public void setStatusHistory(List<StatusHistoryInfo> statusHistory) { this.statusHistory = statusHistory; }
         public LocalDateTime getCreatedAt() { return createdAt; }
         public void setCreatedAt(LocalDateTime createdAt) { this.createdAt = createdAt; }
         public LocalDateTime getPaidAt() { return paidAt; }
@@ -185,6 +188,7 @@ public class OrderDTO {
     public static class StatusHistoryInfo {
         private String fromStatus;
         private String toStatus;
+        private String changedBy;
         private String note;
         private LocalDateTime createdAt;
 
@@ -193,6 +197,8 @@ public class OrderDTO {
         public void setFromStatus(String fromStatus) { this.fromStatus = fromStatus; }
         public String getToStatus() { return toStatus; }
         public void setToStatus(String toStatus) { this.toStatus = toStatus; }
+        public String getChangedBy() { return changedBy; }
+        public void setChangedBy(String changedBy) { this.changedBy = changedBy; }
         public String getNote() { return note; }
         public void setNote(String note) { this.note = note; }
         public LocalDateTime getCreatedAt() { return createdAt; }

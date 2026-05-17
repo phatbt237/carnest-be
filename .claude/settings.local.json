@@ -1,0 +1,8 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(xargs grep -l \"ADMIN\\\\|hasRole\\\\|SecurityConfig\")",
+      "Bash(mvn compile *)"
+    ]
+  }
+}

@@ -64,4 +64,45 @@ public interface OrderRepository extends JpaRepository<Order, Long> {
 
     @Query("SELECT o FROM Order o WHERE o.status = 'PENDING_PAYMENT' AND o.paymentDeadline <= :now")
     List<Order> findExpiredPendingPayment(@Param("now") LocalDateTime now);
+
+    // ===== ADMIN REPORT =====
+    @Query("SELECT COUNT(o) FROM Order o WHERE o.status = :status")
+    Long countByStatus(@Param("status") OrderStatus status);
+
+    @Query("SELECT COUNT(o) FROM Order o WHERE o.createdAt BETWEEN :from AND :to")
+    Long countByPeriod(@Param("from") LocalDateTime from, @Param("to") LocalDateTime to);
+
+    @Query("SELECT COALESCE(SUM(o.totalAmount), 0) FROM Order o WHERE o.status = 'COMPLETED' AND o.createdAt BETWEEN :from AND :to")
+    java.math.BigDecimal sumRevenueByPeriod(@Param("from") LocalDateTime from, @Param("to") LocalDateTime to);
+
+    @Query("SELECT COALESCE(SUM(o.totalAmount), 0) FROM Order o WHERE o.status = 'COMPLETED'")
+    java.math.BigDecimal sumTotalRevenue();
+
+    // Doanh thu theo ngày: trả về [date_str, sum]
+    @Query("SELECT FUNCTION('DATE_FORMAT', o.createdAt, '%Y-%m-%d'), COALESCE(SUM(o.totalAmount), 0), COUNT(o) " +
+           "FROM Order o WHERE o.status = 'COMPLETED' AND o.createdAt BETWEEN :from AND :to " +
+           "GROUP BY FUNCTION('DATE_FORMAT', o.createdAt, '%Y-%m-%d') ORDER BY 1 ASC")
+    List<Object[]> revenueGroupByDay(@Param("from") LocalDateTime from, @Param("to") LocalDateTime to);
+
+    // Doanh thu theo tháng
+    @Query("SELECT FUNCTION('DATE_FORMAT', o.createdAt, '%Y-%m'), COALESCE(SUM(o.totalAmount), 0), COUNT(o) " +
+           "FROM Order o WHERE o.status = 'COMPLETED' AND o.createdAt BETWEEN :from AND :to " +
+           "GROUP BY FUNCTION('DATE_FORMAT', o.createdAt, '%Y-%m') ORDER BY 1 ASC")
+    List<Object[]> revenueGroupByMonth(@Param("from") LocalDateTime from, @Param("to") LocalDateTime to);
+
+    // Top shop theo doanh thu
+    @Query("SELECT o.shop.id, o.shop.shopName, COALESCE(SUM(o.totalAmount), 0), COUNT(o) " +
+           "FROM Order o WHERE o.status = 'COMPLETED' " +
+           "GROUP BY o.shop.id, o.shop.shopName ORDER BY 3 DESC")
+    List<Object[]> topShopsByRevenue(@Param("limit") int limit);
+
+    // Top buyer theo tổng chi
+    @Query("SELECT o.buyer.id, o.buyer.username, o.buyer.fullName, COALESCE(SUM(o.totalAmount), 0), COUNT(o) " +
+           "FROM Order o WHERE o.status = 'COMPLETED' " +
+           "GROUP BY o.buyer.id, o.buyer.username, o.buyer.fullName ORDER BY 4 DESC")
+    List<Object[]> topBuyersBySpend(@Param("limit") int limit);
+
+    // Phân bổ trạng thái đơn
+    @Query("SELECT o.status, COUNT(o) FROM Order o GROUP BY o.status")
+    List<Object[]> countGroupByStatus();
 }

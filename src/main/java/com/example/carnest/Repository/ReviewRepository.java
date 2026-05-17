@@ -38,4 +38,14 @@ public interface ReviewRepository extends JpaRepository<Review, Long> {
 
     @Query("SELECT AVG(r.rating) FROM Review r WHERE r.reviewed.id = :userId AND r.type = :type AND r.isHidden = false")
     Double avgRatingByReviewedId(@Param("userId") Long userId, @Param("type") ReviewType type);
+
+    // ===== ADMIN REPORT =====
+    @Query("SELECT COUNT(r) FROM Review r WHERE r.isHidden = false")
+    Long countTotal();
+
+    @Query("SELECT AVG(r.rating) FROM Review r WHERE r.isHidden = false")
+    Double avgRatingOverall();
+
+    @Query("SELECT r.rating, COUNT(r) FROM Review r WHERE r.isHidden = false GROUP BY r.rating ORDER BY 1 ASC")
+    List<Object[]> countGroupByRating();
 }
