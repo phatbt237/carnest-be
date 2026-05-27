@@ -170,6 +170,16 @@ public class EventDTO {
         public void setAction(String action) { this.action = action; }
     }
 
+    // ===== AUCTION CLOSE EVENT =====
+    public static class AuctionCloseEvent implements Serializable {
+        private Long auctionId;
+
+        public AuctionCloseEvent() {}
+        public AuctionCloseEvent(Long auctionId) { this.auctionId = auctionId; }
+        public Long getAuctionId() { return auctionId; }
+        public void setAuctionId(Long auctionId) { this.auctionId = auctionId; }
+    }
+
     // ===== STATS UPDATE EVENT =====
     public static class StatsEvent implements Serializable {
         private Long userId;

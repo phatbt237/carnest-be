@@ -7,6 +7,9 @@ import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDateTime;
+import java.time.temporal.ChronoUnit;
+
 @Service
 public class EventPublisher {
 
@@ -52,6 +55,20 @@ public class EventPublisher {
         };
         rabbitTemplate.convertAndSend(RabbitMQConfig.EXCHANGE_DELAYED,
                 RabbitMQConfig.RK_ORDER_EXPIRE, event, processor);
+    }
+
+    // ===== AUCTION CLOSE (delayed) =====
+    public void publishAuctionClose(Long auctionId, LocalDateTime endTime) {
+        EventDTO.AuctionCloseEvent event = new EventDTO.AuctionCloseEvent(auctionId);
+        long delayMs = ChronoUnit.MILLIS.between(LocalDateTime.now(), endTime);
+        if (delayMs < 0) delayMs = 0;
+        final long finalDelayMs = delayMs;
+        MessagePostProcessor processor = message -> {
+            message.getMessageProperties().setHeader("x-delay", finalDelayMs);
+            return message;
+        };
+        rabbitTemplate.convertAndSend(RabbitMQConfig.EXCHANGE_DELAYED,
+                RabbitMQConfig.RK_AUCTION_CLOSE, event, processor);
     }
 
     // ===== AUCTION =====

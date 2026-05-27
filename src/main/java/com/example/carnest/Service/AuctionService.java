@@ -14,6 +14,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -29,13 +30,19 @@ public class AuctionService {
     private final UserRepository userRepository;
     private final AuctionWebSocketService webSocketService;
     private final EventPublisher eventPublisher;
+    private final OrderRepository orderRepository;
+    private final OrderItemRepository orderItemRepository;
+    private final OrderStatusHistoryRepository orderStatusHistoryRepository;
 
     private static final int MAX_SIZE = 50;
 
     @Autowired
     public AuctionService(AuctionRepository auctionRepository, AuctionBidRepository bidRepository,
                           ProductRepository productRepository, ProductImageRepository productImageRepository,
-                          ShopRepository shopRepository, UserRepository userRepository, AuctionWebSocketService webSocketService, EventPublisher eventPublisher) {
+                          ShopRepository shopRepository, UserRepository userRepository,
+                          AuctionWebSocketService webSocketService, EventPublisher eventPublisher,
+                          OrderRepository orderRepository, OrderItemRepository orderItemRepository,
+                          OrderStatusHistoryRepository orderStatusHistoryRepository) {
         this.auctionRepository = auctionRepository;
         this.bidRepository = bidRepository;
         this.productRepository = productRepository;
@@ -44,6 +51,9 @@ public class AuctionService {
         this.userRepository = userRepository;
         this.webSocketService = webSocketService;
         this.eventPublisher = eventPublisher;
+        this.orderRepository = orderRepository;
+        this.orderItemRepository = orderItemRepository;
+        this.orderStatusHistoryRepository = orderStatusHistoryRepository;
     }
 
     // ===== TẠO AUCTION =====
@@ -92,6 +102,7 @@ public class AuctionService {
         }
 
         auction = auctionRepository.save(auction);
+        eventPublisher.publishAuctionClose(auction.getId(), auction.getEndTime());
         return toAuctionResponse(auction);
     }
 
@@ -159,6 +170,7 @@ public class AuctionService {
         if (minutesLeft <= auction.getSnipeThresholdMin()) {
             auction.setEndTime(auction.getEndTime().plusMinutes(auction.getAutoExtendMinutes()));
             auction.setExtendedCount(auction.getExtendedCount() + 1);
+            eventPublisher.publishAuctionClose(auction.getId(), auction.getEndTime());
         }
 
         auctionRepository.save(auction);
@@ -283,6 +295,83 @@ public class AuctionService {
         return new ShopDTO.CursorPage<>(items, nextCursor, hasMore, items.size(), total);
     }
 
+    // ===== ĐÓNG AUCTION KHI HẾT GIỜ (gọi từ EventConsumer) =====
+    @Transactional
+    public void closeExpiredAuction(Long auctionId) {
+        Auction auction = auctionRepository.findByIdForClose(auctionId).orElse(null);
+        if (auction == null || auction.getStatus() != AuctionStatus.ACTIVE) return;
+
+        // Anti-snipe đã extend endTime → delayed message cũ đến sớm, bỏ qua
+        if (auction.getEndTime().isAfter(LocalDateTime.now())) {
+            eventPublisher.publishAuctionClose(auctionId, auction.getEndTime());
+            return;
+        }
+
+        if (auction.getWinner() != null) {
+            if (auction.getReservePrice() != null &&
+                    auction.getCurrentPrice().compareTo(auction.getReservePrice()) < 0) {
+                auction.setStatus(AuctionStatus.NO_SALE);
+                auction.getProduct().setStatus(ProductStatus.ACTIVE);
+                productRepository.save(auction.getProduct());
+            } else {
+                auction.setStatus(AuctionStatus.ENDED);
+                createOrderFromAuction(auction);
+            }
+        } else {
+            auction.setStatus(AuctionStatus.NO_SALE);
+            auction.getProduct().setStatus(ProductStatus.ACTIVE);
+            productRepository.save(auction.getProduct());
+        }
+
+        auctionRepository.save(auction);
+        webSocketService.sendAuctionEnded(auction);
+        System.out.println("[AuctionService] Closed auction #" + auctionId + " → " + auction.getStatus());
+    }
+
+    private void createOrderFromAuction(Auction auction) {
+        Product product = auction.getProduct();
+        BigDecimal winPrice = auction.getCurrentPrice();
+
+        Order order = new Order();
+        order.setOrderCode("AUC-" + LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMdd"))
+                + "-" + String.format("%04d", new java.util.Random().nextInt(10000)));
+        order.setBuyer(auction.getWinner());
+        order.setShop(product.getShop());
+        order.setShippingName("");
+        order.setShippingPhone("");
+        order.setShippingAddress("");
+        order.setSubtotal(winPrice);
+        order.setShippingFee(BigDecimal.ZERO);
+        order.setDiscountAmount(BigDecimal.ZERO);
+        order.setTotalAmount(winPrice);
+        order.setPaymentStatus(PaymentStatus.PENDING);
+        order.setEscrowStatus(EscrowStatus.NONE);
+        order.setStatus(OrderStatus.PENDING_PAYMENT);
+        order.setPaymentDeadline(LocalDateTime.now().plusMinutes(30));
+        order.setBuyerNote("Đơn từ đấu giá #" + auction.getId());
+        order = orderRepository.save(order);
+
+        List<ProductImage> imgs = productImageRepository.findPrimaryByProductIds(List.of(product.getId()));
+
+        OrderItem item = new OrderItem();
+        item.setOrder(order);
+        item.setProduct(product);
+        item.setProductName(product.getName());
+        item.setProductImage(imgs.isEmpty() ? null : imgs.get(0).getImageUrl());
+        item.setPrice(winPrice);
+        item.setQuantity(1);
+        orderItemRepository.save(item);
+
+        OrderStatusHistory history = new OrderStatusHistory();
+        history.setOrder(order);
+        history.setToStatus(OrderStatus.PENDING_PAYMENT.name());
+        history.setNote("Đơn từ đấu giá — giá thắng " + winPrice + " VNĐ — thanh toán trong 30 phút");
+        orderStatusHistoryRepository.save(history);
+
+        System.out.println("[AuctionService] Tạo order " + order.getOrderCode()
+                + " cho winner " + auction.getWinner().getUsername());
+    }
+
     // ===== HELPER =====
     private AuctionDTO.AuctionResponse toAuctionResponse(Auction a) {
         AuctionDTO.AuctionResponse r = new AuctionDTO.AuctionResponse();
@@ -337,54 +426,62 @@ public class AuctionService {
     }
 
     private void processAutoBid(Auction auction, AuctionBid newBid) {
-        // Tìm tất cả bid có maxAutoBid, trừ người vừa bid
+        // Tìm auto-bidder tốt nhất từ người khác có maxAutoBid > bidAmount vừa bid
         List<AuctionBid> autoBids = bidRepository.findByAuctionIdWithBidder(auction.getId())
                 .stream()
                 .filter(b -> b.getMaxAutoBid() != null
                         && !b.getBidder().getId().equals(newBid.getBidder().getId())
                         && b.getMaxAutoBid().compareTo(newBid.getBidAmount()) > 0)
-                .sorted((a, b) -> b.getMaxAutoBid().compareTo(a.getMaxAutoBid())) // cao nhất trước
+                .sorted((a, b) -> b.getMaxAutoBid().compareTo(a.getMaxAutoBid()))
                 .collect(Collectors.toList());
 
         if (autoBids.isEmpty()) return;
 
         AuctionBid topAutoBid = autoBids.get(0);
-        BigDecimal autoBidAmount = newBid.getBidAmount().add(auction.getBidIncrement());
 
-        // Không vượt quá maxAutoBid
-        if (autoBidAmount.compareTo(topAutoBid.getMaxAutoBid()) > 0) {
-            autoBidAmount = topAutoBid.getMaxAutoBid();
+        BigDecimal autoBidAmount;
+        User winner;
+        BigDecimal winnerMaxAutoBid;
+
+        if (newBid.getMaxAutoBid() != null && newBid.getMaxAutoBid().compareTo(topAutoBid.getMaxAutoBid()) > 0) {
+            // newBid có maxAutoBid cao hơn → newBid thắng, giá = maxAutoBid đối thủ + increment
+            autoBidAmount = topAutoBid.getMaxAutoBid().add(auction.getBidIncrement());
+            winner = newBid.getBidder();
+            winnerMaxAutoBid = newBid.getMaxAutoBid();
+        } else {
+            // topAutoBid thắng (maxAutoBid cao hơn hoặc bằng)
+            // giá = maxAutoBid của newBid + increment (nếu có), hoặc bidAmount + increment
+            BigDecimal loserCeiling = newBid.getMaxAutoBid() != null ? newBid.getMaxAutoBid() : newBid.getBidAmount();
+            autoBidAmount = loserCeiling.add(auction.getBidIncrement());
+            if (autoBidAmount.compareTo(topAutoBid.getMaxAutoBid()) > 0) {
+                autoBidAmount = topAutoBid.getMaxAutoBid();
+            }
+            winner = topAutoBid.getBidder();
+            winnerMaxAutoBid = topAutoBid.getMaxAutoBid();
         }
 
-        // Phải cao hơn giá hiện tại + increment
-        BigDecimal minRequired = auction.getCurrentPrice().add(auction.getBidIncrement());
-        if (autoBidAmount.compareTo(minRequired) < 0) return;
+        if (autoBidAmount.compareTo(auction.getCurrentPrice()) <= 0) return;
 
-        // Đánh dấu bid cũ không winning
         newBid.setIsWinning(false);
         bidRepository.save(newBid);
 
-        // Tạo auto bid
         AuctionBid auto = new AuctionBid();
         auto.setAuction(auction);
-        auto.setBidder(topAutoBid.getBidder());
+        auto.setBidder(winner);
         auto.setBidAmount(autoBidAmount);
         auto.setIsAutoBid(true);
-        auto.setMaxAutoBid(topAutoBid.getMaxAutoBid());
+        auto.setMaxAutoBid(winnerMaxAutoBid);
         auto.setIsWinning(true);
         bidRepository.save(auto);
 
-        // Cập nhật auction
         auction.setCurrentPrice(autoBidAmount);
         auction.setTotalBids(auction.getTotalBids() + 1);
-        auction.setWinner(topAutoBid.getBidder());
+        auction.setWinner(winner);
         auction.setWinningBid(auto);
         auctionRepository.save(auction);
 
-        webSocketService.sendNewBid(auction.getId(), topAutoBid.getBidder().getUsername(),
-                autoBidAmount, true);
+        webSocketService.sendNewBid(auction.getId(), winner.getUsername(), autoBidAmount, true);
         webSocketService.sendUpdate(auction);
-
         sendAuctionUpdate(auction);
     }
 

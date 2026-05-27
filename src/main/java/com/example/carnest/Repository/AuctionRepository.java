@@ -54,6 +54,13 @@ public interface AuctionRepository extends JpaRepository<Auction, Long> {
             @Param("cursorId") Long cursorId,
             @Param("limit") int limit);
 
+    // Consumer: load đủ relation để đóng auction
+    @Query("SELECT a FROM Auction a " +
+            "JOIN FETCH a.product p JOIN FETCH p.shop s JOIN FETCH s.user " +
+            "LEFT JOIN FETCH a.winner " +
+            "WHERE a.id = :id")
+    Optional<Auction> findByIdForClose(@Param("id") Long id);
+
     // Scheduler: auction hết thời gian
     @Query("SELECT a FROM Auction a WHERE a.status = 'ACTIVE' AND a.endTime <= :now")
     List<Auction> findExpiredAuctions(@Param("now") LocalDateTime now);

@@ -17,6 +17,7 @@ public class EventConsumer {
 
     @Autowired private NotificationService notificationService;
     @Autowired private AuctionWebSocketService auctionWebSocketService;
+    @Autowired private AuctionService auctionService;
     @Autowired private OrderRepository orderRepository;
     @Autowired private OrderItemRepository orderItemRepository;
     @Autowired private ProductRepository productRepository;
@@ -120,6 +121,17 @@ public class EventConsumer {
             System.out.println("[Consumer] Order expired: " + order.getOrderCode());
         } catch (Exception e) {
             System.err.println("[Consumer] Order expire error: " + e.getMessage());
+        }
+    }
+
+    // ===== AUCTION CLOSE — đóng phiên khi hết giờ (delayed message) =====
+    @RabbitListener(queues = RabbitMQConfig.QUEUE_AUCTION_CLOSE)
+    public void handleAuctionClose(EventDTO.AuctionCloseEvent event) {
+        try {
+            auctionService.closeExpiredAuction(event.getAuctionId());
+            System.out.println("[Consumer] Auction close processed: #" + event.getAuctionId());
+        } catch (Exception e) {
+            System.err.println("[Consumer] Auction close error: " + e.getMessage());
         }
     }
 
