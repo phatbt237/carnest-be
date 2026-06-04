@@ -9,6 +9,7 @@ import com.example.carnest.Model.ProductDTO;
 import com.example.carnest.Model.ShopDTO;
 import com.example.carnest.Repository.*;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -232,62 +233,56 @@ public class ProductService {
 
         size = Math.min(Math.max(size, 1), MAX_SIZE);
         int fetchSize = size + 1;
+        PageRequest pageable = PageRequest.of(0, fetchSize);
 
-        List<Product> products;
-        Long cursorId = null;
+        List<ProductDTO.ProductSummary> items;
 
-        // Nếu có filter → dùng filterProducts
         boolean hasFilter = shopId != null || categoryId != null || brandId != null
                 || scale != null || condition != null || minPrice != null || maxPrice != null || keyword != null;
 
         if (hasFilter) {
-            if (cursor != null && !cursor.isEmpty()) cursorId = Long.parseLong(cursor);
-            products = productRepository.filterProducts(
-                    shopId, categoryId, brandId, scale, condition, minPrice, maxPrice, keyword, cursorId, fetchSize);
+            Long cursorId = (cursor != null && !cursor.isEmpty()) ? Long.parseLong(cursor) : null;
+            items = productRepository.filterProducts(
+                    shopId, categoryId, brandId, scale, condition, minPrice, maxPrice, keyword, cursorId, pageable);
         } else if ("price_asc".equals(sortBy)) {
-            if (cursor == null || cursor.isEmpty()) {
-                products = productRepository.findByPriceAsc(fetchSize);
-            } else {
+            BigDecimal cursorPrice = null;
+            Long cursorId = null;
+            if (cursor != null && !cursor.isEmpty()) {
                 String[] parts = cursor.split("_");
-                products = productRepository.findByPriceAscAfterCursor(
-                        new BigDecimal(parts[0]), Long.parseLong(parts[1]), fetchSize);
+                cursorPrice = new BigDecimal(parts[0]);
+                cursorId = Long.parseLong(parts[1]);
             }
+            items = productRepository.findByPriceAsc(cursorPrice, cursorId, pageable);
         } else if ("price_desc".equals(sortBy)) {
-            if (cursor == null || cursor.isEmpty()) {
-                products = productRepository.findByPriceDesc(fetchSize);
-            } else {
+            BigDecimal cursorPrice = null;
+            Long cursorId = null;
+            if (cursor != null && !cursor.isEmpty()) {
                 String[] parts = cursor.split("_");
-                products = productRepository.findByPriceDescAfterCursor(
-                        new BigDecimal(parts[0]), Long.parseLong(parts[1]), fetchSize);
+                cursorPrice = new BigDecimal(parts[0]);
+                cursorId = Long.parseLong(parts[1]);
             }
+            items = productRepository.findByPriceDesc(cursorPrice, cursorId, pageable);
         } else {
-            // Default: newest
-            if (cursor == null || cursor.isEmpty()) {
-                products = productRepository.findNewest(fetchSize);
-            } else {
-                products = productRepository.findNewestAfterCursor(Long.parseLong(cursor), fetchSize);
-            }
+            Long cursorId = (cursor != null && !cursor.isEmpty()) ? Long.parseLong(cursor) : null;
+            items = productRepository.findNewest(cursorId, pageable);
         }
 
-        boolean hasMore = products.size() > size;
-        if (hasMore) products = products.subList(0, size);
+        boolean hasMore = items.size() > size;
+        if (hasMore) items = new ArrayList<>(items.subList(0, size));
 
         // Batch fetch primary images — 1 query cho tất cả
-        Map<Long, String> primaryImageMap = new HashMap<>();
-        if (!products.isEmpty()) {
-            List<Long> productIds = products.stream().map(Product::getId).collect(Collectors.toList());
-            List<ProductImage> primaryImages = productImageRepository.findPrimaryByProductIds(productIds);
-            primaryImages.forEach(img -> primaryImageMap.put(img.getProduct().getId(), img.getImageUrl()));
+        if (!items.isEmpty()) {
+            List<Long> productIds = items.stream().map(ProductDTO.ProductSummary::getId).collect(Collectors.toList());
+            Map<Long, String> primaryImageMap = new HashMap<>();
+            productImageRepository.findPrimaryByProductIds(productIds)
+                    .forEach(img -> primaryImageMap.put(img.getProduct().getId(), img.getImageUrl()));
+            items.forEach(item -> item.setPrimaryImage(primaryImageMap.get(item.getId())));
         }
-
-        List<ProductDTO.ProductSummary> items = products.stream()
-                .map(p -> toProductSummary(p, primaryImageMap.get(p.getId())))
-                .collect(Collectors.toList());
 
         // Build cursor
         String nextCursor = null;
-        if (hasMore && !products.isEmpty()) {
-            Product last = products.get(products.size() - 1);
+        if (hasMore && !items.isEmpty()) {
+            ProductDTO.ProductSummary last = items.get(items.size() - 1);
             if ("price_asc".equals(sortBy) || "price_desc".equals(sortBy)) {
                 nextCursor = last.getPrice().toPlainString() + "_" + last.getId();
             } else {
@@ -306,27 +301,25 @@ public class ProductService {
     public ShopDTO.CursorPage<ProductDTO.ProductSummary> getByShop(Long shopId, String cursor, int size) {
         size = Math.min(Math.max(size, 1), MAX_SIZE);
         int fetchSize = size + 1;
+        PageRequest pageable = PageRequest.of(0, fetchSize);
 
         Long cursorId = (cursor != null && !cursor.isEmpty()) ? Long.parseLong(cursor) : null;
-        List<Product> products = productRepository.findByShopId(shopId, cursorId, fetchSize);
+        List<ProductDTO.ProductSummary> items = productRepository.findByShopId(shopId, cursorId, pageable);
 
-        boolean hasMore = products.size() > size;
-        if (hasMore) products = products.subList(0, size);
+        boolean hasMore = items.size() > size;
+        if (hasMore) items = new ArrayList<>(items.subList(0, size));
 
-        Map<Long, String> primaryImageMap = new HashMap<>();
-        if (!products.isEmpty()) {
-            List<Long> ids = products.stream().map(Product::getId).collect(Collectors.toList());
+        if (!items.isEmpty()) {
+            List<Long> ids = items.stream().map(ProductDTO.ProductSummary::getId).collect(Collectors.toList());
+            Map<Long, String> primaryImageMap = new HashMap<>();
             productImageRepository.findPrimaryByProductIds(ids)
                     .forEach(img -> primaryImageMap.put(img.getProduct().getId(), img.getImageUrl()));
+            items.forEach(item -> item.setPrimaryImage(primaryImageMap.get(item.getId())));
         }
 
-        List<ProductDTO.ProductSummary> items = products.stream()
-                .map(p -> toProductSummary(p, primaryImageMap.get(p.getId())))
-                .collect(Collectors.toList());
-
         String nextCursor = null;
-        if (hasMore && !products.isEmpty()) {
-            nextCursor = String.valueOf(products.get(products.size() - 1).getId());
+        if (hasMore && !items.isEmpty()) {
+            nextCursor = String.valueOf(items.get(items.size() - 1).getId());
         }
 
         Long total = productRepository.countByShopId(shopId);
@@ -379,6 +372,7 @@ public class ProductService {
         ProductDTO.ShopInfo si = new ProductDTO.ShopInfo();
         si.setId(shop.getId()); si.setShopName(shop.getShopName());
         si.setSlug(shop.getSlug()); si.setLogoUrl(shop.getLogoUrl());
+        si.setRatingAvg(shop.getRatingAvg()); si.setFollowerCount(shop.getFollowerCount());
         r.setShop(si);
 
         // Category
@@ -398,35 +392,6 @@ public class ProductService {
         }
 
         return r;
-    }
-
-    private ProductDTO.ProductSummary toProductSummary(Product p, String primaryImage) {
-        ProductDTO.ProductSummary s = new ProductDTO.ProductSummary();
-        s.setId(p.getId());
-        s.setName(p.getName());
-        s.setSlug(p.getSlug());
-        s.setPrimaryImage(primaryImage);
-        s.setPrice(p.getPrice());
-        s.setOriginalPrice(p.getOriginalPrice());
-        s.setScale(p.getScale());
-        s.setCondition(p.getCondition().name());
-        s.setIsVerified(p.getIsVerified());
-        s.setFreeShipping(p.getFreeShipping());
-        s.setCreatedAt(p.getCreatedAt());
-        s.setSoldCount(p.getSoldCount());
-        s.setQuantity(p.getQuantity());
-        s.setViewCount(p.getViewCount());
-
-        // Shop info (already JOIN FETCH)
-        s.setShopName(p.getShop().getShopName());
-        s.setShopSlug(p.getShop().getSlug());
-
-        // Brand info
-        if (p.getBrand() != null) {
-            s.setBrandName(p.getBrand().getName());
-        }
-
-        return s;
     }
 
     private String generateSlug(String name) {

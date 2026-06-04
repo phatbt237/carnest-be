@@ -2,7 +2,15 @@
   "permissions": {
     "allow": [
       "Bash(xargs grep -l \"ADMIN\\\\|hasRole\\\\|SecurityConfig\")",
-      "Bash(mvn compile *)"
+      "Bash(mvn compile *)",
+      "PowerShell(Get-ChildItem \"D:\\\\CarNestBE\\\\carnest\" -Recurse -Depth 2 | Where-Object { $_.PSIsContainer } | Select-Object FullName)",
+      "PowerShell(Get-ChildItem \"D:\\\\CarNestBE\\\\carnest\\\\src\\\\main\\\\java\" -Recurse -Depth 5 | Where-Object { $_.PSIsContainer } | Select-Object FullName)",
+      "PowerShell(Get-ChildItem \"D:\\\\CarNestBE\\\\carnest\\\\src\\\\main\\\\java\\\\com\\\\example\\\\carnest\" -Recurse | Where-Object { !$_.PSIsContainer } | Select-Object Name, DirectoryName)",
+      "Bash(git add *)",
+      "Bash(git commit *)",
+      "Bash(git push *)",
+      "Bash(mvnw.cmd compile *)",
+      "Bash(./mvnw compile *)"
     ]
   }
 }

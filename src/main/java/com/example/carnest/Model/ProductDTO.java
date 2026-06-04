@@ -250,6 +250,28 @@ public class ProductDTO {
 
         public ProductSummary() {}
 
+        public ProductSummary(Long id, String name, String slug, BigDecimal price, BigDecimal originalPrice,
+                              String scale, ProductCondition condition, Boolean isVerified, Boolean freeShipping,
+                              String shopName, String shopSlug, String brandName,
+                              Integer soldCount, Integer quantity, Integer viewCount, LocalDateTime createdAt) {
+            this.id = id;
+            this.name = name;
+            this.slug = slug;
+            this.price = price;
+            this.originalPrice = originalPrice;
+            this.scale = scale;
+            this.condition = condition != null ? condition.name() : null;
+            this.isVerified = isVerified;
+            this.freeShipping = freeShipping;
+            this.shopName = shopName;
+            this.shopSlug = shopSlug;
+            this.brandName = brandName;
+            this.soldCount = soldCount;
+            this.quantity = quantity;
+            this.viewCount = viewCount;
+            this.createdAt = createdAt;
+        }
+
         public Long getId() { return id; }
         public void setId(Long id) { this.id = id; }
         public String getName() { return name; }
@@ -309,6 +331,8 @@ public class ProductDTO {
         private String shopName;
         private String slug;
         private String logoUrl;
+        private BigDecimal ratingAvg;
+        private Integer followerCount;
 
         public ShopInfo() {}
         public Long getId() { return id; }
@@ -319,6 +343,10 @@ public class ProductDTO {
         public void setSlug(String slug) { this.slug = slug; }
         public String getLogoUrl() { return logoUrl; }
         public void setLogoUrl(String logoUrl) { this.logoUrl = logoUrl; }
+        public BigDecimal getRatingAvg() { return ratingAvg; }
+        public void setRatingAvg(BigDecimal ratingAvg) { this.ratingAvg = ratingAvg; }
+        public Integer getFollowerCount() { return followerCount; }
+        public void setFollowerCount(Integer followerCount) { this.followerCount = followerCount; }
     }
 
     public static class CategoryInfo {

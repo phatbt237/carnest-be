@@ -3,7 +3,9 @@ package com.example.carnest.Repository;
 import com.example.carnest.Entity.Product;
 import com.example.carnest.Enum.ProductCondition;
 import com.example.carnest.Enum.ProductStatus;
+import com.example.carnest.Model.ProductDTO;
 import jakarta.persistence.LockModeType;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Query;
@@ -19,13 +21,13 @@ public interface ProductRepository extends JpaRepository<Product, Long> {
 
     // ===== CHI TIẾT SẢN PHẨM — fetch tất cả quan hệ 1 lần =====
     @Query("SELECT p FROM Product p " +
-           "JOIN FETCH p.shop s JOIN FETCH s.user " +
+           "JOIN FETCH p.shop s " +
            "LEFT JOIN FETCH p.category LEFT JOIN FETCH p.brand " +
            "WHERE p.id = :id")
     Optional<Product> findByIdFull(@Param("id") Long id);
 
     @Query("SELECT p FROM Product p " +
-           "JOIN FETCH p.shop s JOIN FETCH s.user " +
+           "JOIN FETCH p.shop s " +
            "LEFT JOIN FETCH p.category LEFT JOIN FETCH p.brand " +
            "WHERE p.slug = :slug")
     Optional<Product> findBySlugFull(@Param("slug") String slug);
@@ -33,66 +35,53 @@ public interface ProductRepository extends JpaRepository<Product, Long> {
     Boolean existsBySlug(String slug);
 
     // ===== DANH SÁCH SẢN PHẨM — cursor-based, mới nhất =====
-    @Query("SELECT p FROM Product p " +
-           "JOIN FETCH p.shop s JOIN FETCH s.user " +
-           "LEFT JOIN FETCH p.brand " +
-           "WHERE p.status = 'ACTIVE' " +
+    @Query("SELECT new com.example.carnest.Model.ProductDTO$ProductSummary(" +
+           "p.id, p.name, p.slug, p.price, p.originalPrice, p.scale, p.condition, " +
+           "p.isVerified, p.freeShipping, s.shopName, s.slug, b.name, " +
+           "p.soldCount, p.quantity, p.viewCount, p.createdAt) " +
+           "FROM Product p JOIN p.shop s LEFT JOIN p.brand b " +
+           "WHERE p.status = 'ACTIVE' AND (:cursorId IS NULL OR p.id < :cursorId) " +
            "ORDER BY p.id DESC")
-    List<Product> findNewest(@Param("limit") int limit);
-
-    @Query("SELECT p FROM Product p " +
-           "JOIN FETCH p.shop s JOIN FETCH s.user " +
-           "LEFT JOIN FETCH p.brand " +
-           "WHERE p.status = 'ACTIVE' AND p.id < :cursorId " +
-           "ORDER BY p.id DESC")
-    List<Product> findNewestAfterCursor(@Param("cursorId") Long cursorId, @Param("limit") int limit);
+    List<ProductDTO.ProductSummary> findNewest(@Param("cursorId") Long cursorId, Pageable pageable);
 
     // ===== DANH SÁCH THEO GIÁ TĂNG DẦN =====
-    @Query("SELECT p FROM Product p " +
-           "JOIN FETCH p.shop s JOIN FETCH s.user " +
-           "LEFT JOIN FETCH p.brand " +
+    @Query("SELECT new com.example.carnest.Model.ProductDTO$ProductSummary(" +
+           "p.id, p.name, p.slug, p.price, p.originalPrice, p.scale, p.condition, " +
+           "p.isVerified, p.freeShipping, s.shopName, s.slug, b.name, " +
+           "p.soldCount, p.quantity, p.viewCount, p.createdAt) " +
+           "FROM Product p JOIN p.shop s LEFT JOIN p.brand b " +
            "WHERE p.status = 'ACTIVE' " +
+           "AND (:cursorPrice IS NULL OR p.price > :cursorPrice OR (p.price = :cursorPrice AND p.id > :cursorId)) " +
            "ORDER BY p.price ASC, p.id ASC")
-    List<Product> findByPriceAsc(@Param("limit") int limit);
-
-    @Query("SELECT p FROM Product p " +
-           "JOIN FETCH p.shop s JOIN FETCH s.user " +
-           "LEFT JOIN FETCH p.brand " +
-           "WHERE p.status = 'ACTIVE' " +
-           "AND (p.price > :cursorPrice OR (p.price = :cursorPrice AND p.id > :cursorId)) " +
-           "ORDER BY p.price ASC, p.id ASC")
-    List<Product> findByPriceAscAfterCursor(
+    List<ProductDTO.ProductSummary> findByPriceAsc(
             @Param("cursorPrice") BigDecimal cursorPrice,
             @Param("cursorId") Long cursorId,
-            @Param("limit") int limit);
+            Pageable pageable);
 
     // ===== DANH SÁCH THEO GIÁ GIẢM DẦN =====
-    @Query("SELECT p FROM Product p " +
-           "JOIN FETCH p.shop s JOIN FETCH s.user " +
-           "LEFT JOIN FETCH p.brand " +
+    @Query("SELECT new com.example.carnest.Model.ProductDTO$ProductSummary(" +
+           "p.id, p.name, p.slug, p.price, p.originalPrice, p.scale, p.condition, " +
+           "p.isVerified, p.freeShipping, s.shopName, s.slug, b.name, " +
+           "p.soldCount, p.quantity, p.viewCount, p.createdAt) " +
+           "FROM Product p JOIN p.shop s LEFT JOIN p.brand b " +
            "WHERE p.status = 'ACTIVE' " +
+           "AND (:cursorPrice IS NULL OR p.price < :cursorPrice OR (p.price = :cursorPrice AND p.id < :cursorId)) " +
            "ORDER BY p.price DESC, p.id DESC")
-    List<Product> findByPriceDesc(@Param("limit") int limit);
-
-    @Query("SELECT p FROM Product p " +
-           "JOIN FETCH p.shop s JOIN FETCH s.user " +
-           "LEFT JOIN FETCH p.brand " +
-           "WHERE p.status = 'ACTIVE' " +
-           "AND (p.price < :cursorPrice OR (p.price = :cursorPrice AND p.id < :cursorId)) " +
-           "ORDER BY p.price DESC, p.id DESC")
-    List<Product> findByPriceDescAfterCursor(
+    List<ProductDTO.ProductSummary> findByPriceDesc(
             @Param("cursorPrice") BigDecimal cursorPrice,
             @Param("cursorId") Long cursorId,
-            @Param("limit") int limit);
+            Pageable pageable);
 
     // ===== LỌC NÂNG CAO — nhiều tiêu chí =====
-    @Query("SELECT p FROM Product p " +
-           "JOIN FETCH p.shop s JOIN FETCH s.user " +
-           "LEFT JOIN FETCH p.brand " +
+    @Query("SELECT new com.example.carnest.Model.ProductDTO$ProductSummary(" +
+           "p.id, p.name, p.slug, p.price, p.originalPrice, p.scale, p.condition, " +
+           "p.isVerified, p.freeShipping, s.shopName, s.slug, b.name, " +
+           "p.soldCount, p.quantity, p.viewCount, p.createdAt) " +
+           "FROM Product p JOIN p.shop s LEFT JOIN p.brand b " +
            "WHERE p.status = 'ACTIVE' " +
-           "AND (:shopId IS NULL OR p.shop.id = :shopId) " +
+           "AND (:shopId IS NULL OR s.id = :shopId) " +
            "AND (:categoryId IS NULL OR p.category.id = :categoryId) " +
-           "AND (:brandId IS NULL OR p.brand.id = :brandId) " +
+           "AND (:brandId IS NULL OR b.id = :brandId) " +
            "AND (:scale IS NULL OR p.scale = :scale) " +
            "AND (:condition IS NULL OR p.condition = :condition) " +
            "AND (:minPrice IS NULL OR p.price >= :minPrice) " +
@@ -102,7 +91,7 @@ public interface ProductRepository extends JpaRepository<Product, Long> {
            "     OR LOWER(p.carModel) LIKE LOWER(CONCAT('%', :keyword, '%'))) " +
            "AND (:cursorId IS NULL OR p.id < :cursorId) " +
            "ORDER BY p.id DESC")
-    List<Product> filterProducts(
+    List<ProductDTO.ProductSummary> filterProducts(
             @Param("shopId") Long shopId,
             @Param("categoryId") Long categoryId,
             @Param("brandId") Long brandId,
@@ -112,18 +101,21 @@ public interface ProductRepository extends JpaRepository<Product, Long> {
             @Param("maxPrice") BigDecimal maxPrice,
             @Param("keyword") String keyword,
             @Param("cursorId") Long cursorId,
-            @Param("limit") int limit);
+            Pageable pageable);
 
     // ===== SẢN PHẨM THEO SHOP =====
-    @Query("SELECT p FROM Product p " +
-           "LEFT JOIN FETCH p.brand " +
-           "WHERE p.shop.id = :shopId AND p.status = 'ACTIVE' " +
+    @Query("SELECT new com.example.carnest.Model.ProductDTO$ProductSummary(" +
+           "p.id, p.name, p.slug, p.price, p.originalPrice, p.scale, p.condition, " +
+           "p.isVerified, p.freeShipping, s.shopName, s.slug, b.name, " +
+           "p.soldCount, p.quantity, p.viewCount, p.createdAt) " +
+           "FROM Product p JOIN p.shop s LEFT JOIN p.brand b " +
+           "WHERE s.id = :shopId AND p.status = 'ACTIVE' " +
            "AND (:cursorId IS NULL OR p.id < :cursorId) " +
            "ORDER BY p.id DESC")
-    List<Product> findByShopId(
+    List<ProductDTO.ProductSummary> findByShopId(
             @Param("shopId") Long shopId,
             @Param("cursorId") Long cursorId,
-            @Param("limit") int limit);
+            Pageable pageable);
 
     // ===== ĐẾM =====
     @Query("SELECT COUNT(p) FROM Product p WHERE p.status = 'ACTIVE'")
