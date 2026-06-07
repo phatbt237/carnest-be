@@ -43,16 +43,22 @@ public interface AuctionRepository extends JpaRepository<Auction, Long> {
             @Param("cursorId") Long cursorId,
             @Param("limit") int limit);
 
-    // Auction của seller
-    @Query("SELECT a FROM Auction a " +
-            "JOIN FETCH a.product p " +
+    // Auction của seller — trả về flat data, 1 query duy nhất
+    @Query("SELECT a.id, a.status, p.id, p.name, " +
+            "(SELECT pi.imageUrl FROM ProductImage pi WHERE pi.product.id = p.id AND pi.isPrimary = true), " +
+            "a.startingPrice, a.currentPrice, a.reservePrice, a.totalBids, " +
+            "a.startTime, a.endTime, a.extendedCount, w.username, a.createdAt " +
+            "FROM Auction a " +
+            "JOIN a.product p " +
+            "LEFT JOIN a.winner w " +
             "WHERE a.seller.id = :sellerId " +
+            "AND (:status IS NULL OR a.status = :status) " +
             "AND (:cursorId IS NULL OR a.id < :cursorId) " +
             "ORDER BY a.id DESC")
-    List<Auction> findBySellerId(
+    List<Object[]> findSellerAuctionItems(
             @Param("sellerId") Long sellerId,
-            @Param("cursorId") Long cursorId,
-            @Param("limit") int limit);
+            @Param("status") AuctionStatus status,
+            @Param("cursorId") Long cursorId);
 
     // Consumer: load đủ relation để đóng auction
     @Query("SELECT a FROM Auction a " +

@@ -75,6 +75,18 @@ public class AuctionController {
                 .data(auctionService.getAuctions(filter, cursor, size)).build());
     }
 
+    @GetMapping("/my")
+    @Operation(summary = "Danh sách phiên đấu giá của tôi (seller)",
+            description = "status: UPCOMING, ACTIVE, ENDED, NO_SALE, CANCELLED — để trống để xem tất cả")
+    public ResponseEntity<AuthDTO.MessageResponse> getMyAuctions(
+            @AuthenticationPrincipal CustomUserDetails userDetails,
+            @RequestParam(required = false) String status,
+            @RequestParam(required = false) String cursor,
+            @RequestParam(defaultValue = "20") int size) {
+        return ResponseEntity.ok(AuthDTO.MessageResponse.builder().status(200).message("Thành công")
+                .data(auctionService.getMyAuctions(userDetails.getUserId(), status, cursor, size)).build());
+    }
+
     @GetMapping("/test-end-auction")
     public String test() {
         orderScheduler.endExpiredAuctions();

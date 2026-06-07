@@ -300,6 +300,7 @@ public class AuctionService {
     public void closeExpiredAuction(Long auctionId) {
         Auction auction = auctionRepository.findByIdForClose(auctionId).orElse(null);
         if (auction == null || auction.getStatus() != AuctionStatus.ACTIVE) return;
+        // Nếu 2 message cùng đến, cái thứ 2 sẽ thấy version không khớp và bỏ qua
 
         // Anti-snipe đã extend endTime → delayed message cũ đến sớm, bỏ qua
         if (auction.getEndTime().isAfter(LocalDateTime.now())) {
@@ -368,8 +369,51 @@ public class AuctionService {
         history.setNote("Đơn từ đấu giá — giá thắng " + winPrice + " VNĐ — thanh toán trong 30 phút");
         orderStatusHistoryRepository.save(history);
 
+        long expireDelayMs = 30 * 60 * 1000L;
+        eventPublisher.publishOrderExpire(order.getId(), expireDelayMs);
+
         System.out.println("[AuctionService] Tạo order " + order.getOrderCode()
                 + " cho winner " + auction.getWinner().getUsername());
+    }
+
+    // ===== SELLER: danh sách phiên đấu giá của mình =====
+    public ShopDTO.CursorPage<AuctionDTO.SellerAuctionItem> getMyAuctions(
+            Long sellerId, String statusFilter, String cursor, int size) {
+        size = Math.min(Math.max(size, 1), MAX_SIZE);
+        Long cursorId = (cursor != null && !cursor.isEmpty()) ? Long.parseLong(cursor) : null;
+        AuctionStatus status = null;
+        if (statusFilter != null && !statusFilter.isEmpty()) {
+            try { status = AuctionStatus.valueOf(statusFilter.toUpperCase()); }
+            catch (IllegalArgumentException ignored) {}
+        }
+
+        List<Object[]> rows = auctionRepository.findSellerAuctionItems(sellerId, status, cursorId);
+        boolean hasMore = rows.size() > size;
+        if (hasMore) rows = rows.subList(0, size);
+
+        List<AuctionDTO.SellerAuctionItem> items = rows.stream().map(row -> {
+            AuctionDTO.SellerAuctionItem item = new AuctionDTO.SellerAuctionItem();
+            item.setId((Long) row[0]);
+            item.setStatus(((AuctionStatus) row[1]).name());
+            item.setProductId((Long) row[2]);
+            item.setProductName((String) row[3]);
+            item.setProductImage((String) row[4]);
+            item.setStartingPrice((java.math.BigDecimal) row[5]);
+            item.setCurrentPrice((java.math.BigDecimal) row[6]);
+            item.setReservePrice((java.math.BigDecimal) row[7]);
+            item.setReserveMet(row[7] != null &&
+                    ((java.math.BigDecimal) row[6]).compareTo((java.math.BigDecimal) row[7]) >= 0);
+            item.setTotalBids((Integer) row[8]);
+            item.setStartTime((LocalDateTime) row[9]);
+            item.setEndTime((LocalDateTime) row[10]);
+            item.setExtendedCount((Integer) row[11]);
+            item.setWinnerUsername((String) row[12]);
+            item.setCreatedAt((LocalDateTime) row[13]);
+            return item;
+        }).collect(Collectors.toList());
+
+        String nextCursor = hasMore ? String.valueOf((Long) rows.get(rows.size() - 1)[0]) : null;
+        return new ShopDTO.CursorPage<>(items, nextCursor, hasMore, items.size(), (long) items.size());
     }
 
     // ===== HELPER =====

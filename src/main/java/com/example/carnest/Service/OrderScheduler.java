@@ -46,6 +46,9 @@ public class OrderScheduler {
     @Autowired
     private AuctionWebSocketService auctionWebSocketService;
 
+    @Autowired
+    private AuctionService auctionService;
+
     @Scheduled(fixedRate = 300000)
     @Transactional
     public void expirePendingPaymentOrders() {
@@ -82,35 +85,19 @@ public class OrderScheduler {
         }
     }
 
-    // Chạy mỗi 30s — kết thúc auction hết giờ
-//    @Scheduled(fixedRate = 30000)
-    @Transactional
+    // Fallback đóng auction hết giờ — chạy mỗi 10 phút cho các trường hợp bị miss
+    @Scheduled(fixedRate = 600000)
     public void endExpiredAuctions() {
         List<Auction> expired = auctionRepository.findExpiredAuctions(LocalDateTime.now());
         for (Auction a : expired) {
-            if (a.getWinner() != null) {
-                // Có người thắng
-                if (a.getReservePrice() != null && a.getCurrentPrice().compareTo(a.getReservePrice()) < 0) {
-                    // Không đạt reserve price
-                    a.setStatus(AuctionStatus.NO_SALE);
-                    a.getProduct().setStatus(ProductStatus.ACTIVE);
-                    productRepository.save(a.getProduct());
-                } else {
-                    a.setStatus(AuctionStatus.ENDED);
-                    // Tạo order cho winner
-                    createOrderFromAuction(a);
-                }
-            } else {
-                // Không ai bid
-                a.setStatus(AuctionStatus.NO_SALE);
-                a.getProduct().setStatus(ProductStatus.ACTIVE);
-                productRepository.save(a.getProduct());
+            try {
+                auctionService.closeExpiredAuction(a.getId());
+            } catch (Exception e) {
+                System.err.println("[Scheduler] Lỗi đóng auction #" + a.getId() + ": " + e.getMessage());
             }
-            auctionRepository.save(a);
-            auctionWebSocketService.sendAuctionEnded(a);
         }
         if (!expired.isEmpty()) {
-            System.out.println("[Scheduler] Kết thúc " + expired.size() + " phiên đấu giá");
+            System.out.println("[Scheduler] Fallback xử lý " + expired.size() + " auction hết hạn");
         }
     }
 

@@ -137,6 +137,57 @@ public class AuctionDTO {
         public void setCreatedAt(LocalDateTime createdAt) { this.createdAt = createdAt; }
     }
 
+    // ===== SELLER: theo dõi phiên đấu giá của mình =====
+    public static class SellerAuctionItem {
+        private Long id;
+        private String status;
+        private String productName;
+        private String productImage;
+        private Long productId;
+        private BigDecimal startingPrice;
+        private BigDecimal currentPrice;
+        private BigDecimal reservePrice;
+        private Boolean reserveMet;
+        private Integer totalBids;
+        private LocalDateTime startTime;
+        private LocalDateTime endTime;
+        private Integer extendedCount;
+        private String winnerUsername;
+        private LocalDateTime createdAt;
+
+        public SellerAuctionItem() {}
+        public Long getId() { return id; }
+        public void setId(Long id) { this.id = id; }
+        public String getStatus() { return status; }
+        public void setStatus(String status) { this.status = status; }
+        public String getProductName() { return productName; }
+        public void setProductName(String productName) { this.productName = productName; }
+        public String getProductImage() { return productImage; }
+        public void setProductImage(String productImage) { this.productImage = productImage; }
+        public Long getProductId() { return productId; }
+        public void setProductId(Long productId) { this.productId = productId; }
+        public BigDecimal getStartingPrice() { return startingPrice; }
+        public void setStartingPrice(BigDecimal startingPrice) { this.startingPrice = startingPrice; }
+        public BigDecimal getCurrentPrice() { return currentPrice; }
+        public void setCurrentPrice(BigDecimal currentPrice) { this.currentPrice = currentPrice; }
+        public BigDecimal getReservePrice() { return reservePrice; }
+        public void setReservePrice(BigDecimal reservePrice) { this.reservePrice = reservePrice; }
+        public Boolean getReserveMet() { return reserveMet; }
+        public void setReserveMet(Boolean reserveMet) { this.reserveMet = reserveMet; }
+        public Integer getTotalBids() { return totalBids; }
+        public void setTotalBids(Integer totalBids) { this.totalBids = totalBids; }
+        public LocalDateTime getStartTime() { return startTime; }
+        public void setStartTime(LocalDateTime startTime) { this.startTime = startTime; }
+        public LocalDateTime getEndTime() { return endTime; }
+        public void setEndTime(LocalDateTime endTime) { this.endTime = endTime; }
+        public Integer getExtendedCount() { return extendedCount; }
+        public void setExtendedCount(Integer extendedCount) { this.extendedCount = extendedCount; }
+        public String getWinnerUsername() { return winnerUsername; }
+        public void setWinnerUsername(String winnerUsername) { this.winnerUsername = winnerUsername; }
+        public LocalDateTime getCreatedAt() { return createdAt; }
+        public void setCreatedAt(LocalDateTime createdAt) { this.createdAt = createdAt; }
+    }
+
     public static class ProductSummary {
         private Long id;
         private String name;

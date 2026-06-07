@@ -127,11 +127,20 @@ public class EventConsumer {
     // ===== AUCTION CLOSE — đóng phiên khi hết giờ (delayed message) =====
     @RabbitListener(queues = RabbitMQConfig.QUEUE_AUCTION_CLOSE)
     public void handleAuctionClose(EventDTO.AuctionCloseEvent event) {
+        auctionService.closeExpiredAuction(event.getAuctionId());
+        System.out.println("[Consumer] Auction close processed: #" + event.getAuctionId());
+    }
+
+    // ===== AUCTION CLOSE DLQ — retry lần cuối sau 1 phút, nếu vẫn fail thì bỏ =====
+    @RabbitListener(queues = RabbitMQConfig.QUEUE_AUCTION_CLOSE_DLQ)
+    public void handleAuctionCloseDlq(EventDTO.AuctionCloseEvent event) {
+        System.err.println("[DLQ] Retry auction close lần cuối: #" + event.getAuctionId());
         try {
             auctionService.closeExpiredAuction(event.getAuctionId());
-            System.out.println("[Consumer] Auction close processed: #" + event.getAuctionId());
+            System.out.println("[DLQ] Thành công auction #" + event.getAuctionId());
         } catch (Exception e) {
-            System.err.println("[Consumer] Auction close error: " + e.getMessage());
+            System.err.println("[DLQ] Thất bại hoàn toàn auction #" + event.getAuctionId() + ": " + e.getMessage());
+            // Scheduler 10 phút sẽ xử lý tiếp
         }
     }
 

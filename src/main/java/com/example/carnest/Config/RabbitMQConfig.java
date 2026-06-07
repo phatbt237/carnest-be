@@ -1,6 +1,7 @@
 package com.example.carnest.Config;
 
 import org.springframework.amqp.core.*;
+import org.springframework.amqp.core.QueueBuilder;
 import org.springframework.amqp.rabbit.connection.ConnectionFactory;
 import org.springframework.amqp.rabbit.core.RabbitAdmin;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
@@ -31,6 +32,7 @@ public class RabbitMQConfig {
     public static final String QUEUE_AUCTION_BID = "auction.bid";
     public static final String QUEUE_AUCTION_ENDED = "auction.ended";
     public static final String QUEUE_AUCTION_CLOSE = "auction.close";
+    public static final String QUEUE_AUCTION_CLOSE_DLQ = "auction.close.dlq";
     public static final String QUEUE_STATS_UPDATE = "stats.update";
     public static final String QUEUE_OFFER_NOTIFICATION = "offer.notification";
     public static final String QUEUE_TRADE_NOTIFICATION = "trade.notification";
@@ -95,7 +97,13 @@ public class RabbitMQConfig {
     @Bean public Queue orderExpireQueue() { return new Queue(QUEUE_ORDER_EXPIRE, true); }
     @Bean public Queue auctionBidQueue() { return new Queue(QUEUE_AUCTION_BID, true); }
     @Bean public Queue auctionEndedQueue() { return new Queue(QUEUE_AUCTION_ENDED, true); }
-    @Bean public Queue auctionCloseQueue() { return new Queue(QUEUE_AUCTION_CLOSE, true); }
+    @Bean public Queue auctionCloseQueue() {
+        return QueueBuilder.durable(QUEUE_AUCTION_CLOSE)
+                .withArgument("x-dead-letter-exchange", "")
+                .withArgument("x-dead-letter-routing-key", QUEUE_AUCTION_CLOSE_DLQ)
+                .build();
+    }
+    @Bean public Queue auctionCloseDlqQueue() { return new Queue(QUEUE_AUCTION_CLOSE_DLQ, true); }
     @Bean public Queue statsUpdateQueue() { return new Queue(QUEUE_STATS_UPDATE, true); }
     @Bean public Queue offerNotificationQueue() { return new Queue(QUEUE_OFFER_NOTIFICATION, true); }
     @Bean public Queue tradeNotificationQueue() { return new Queue(QUEUE_TRADE_NOTIFICATION, true); }

@@ -10,7 +10,10 @@
       "Bash(git commit *)",
       "Bash(git push *)",
       "Bash(mvnw.cmd compile *)",
-      "Bash(./mvnw compile *)"
+      "Bash(./mvnw compile *)",
+      "Bash(dir D:\\\\CarNestBE\\\\carnest *)",
+      "Bash(dir D:\\\\CarNestBE\\\\carnest\\\\src *)",
+      "Bash(dir D:\\\\CarNestBE\\\\carnest\\\\src\\\\main *)"
     ]
   }
 }
