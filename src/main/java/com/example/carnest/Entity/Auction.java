@@ -30,7 +30,9 @@ public class Auction {
     private Long id;
 
     @Version
-    private Long version;
+    @Column(nullable = false)
+    @Builder.Default
+    private Long version = 0L;
 
     @OneToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "product_id", nullable = false)

@@ -308,7 +308,7 @@ public class AuctionService {
             return;
         }
 
-        if (auction.getWinner() != null) {
+        if (auction.getWinner() != null && auction.getCurrentPrice() != null) {
             if (auction.getReservePrice() != null &&
                     auction.getCurrentPrice().compareTo(auction.getReservePrice()) < 0) {
                 auction.setStatus(AuctionStatus.NO_SALE);
