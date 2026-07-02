@@ -1,6 +1,7 @@
 package com.example.carnest.API;
 
 import com.example.carnest.Config.CustomUserDetails;
+import com.example.carnest.Config.RateLimit;
 import com.example.carnest.Model.AuctionDTO;
 import com.example.carnest.Model.AuthDTO;
 import com.example.carnest.Model.ShopDTO;
@@ -41,6 +42,7 @@ public class AuctionController {
 
     @PostMapping("/{id}/bid")
     @Operation(summary = "Đặt bid")
+    @RateLimit(action = "place_bid", limit = 10, windowSeconds = 60)
     public ResponseEntity<AuthDTO.MessageResponse> bid(
             @AuthenticationPrincipal CustomUserDetails userDetails,
             @PathVariable Long id,

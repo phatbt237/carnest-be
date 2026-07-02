@@ -1,6 +1,7 @@
 package com.example.carnest.API;
 
 import com.example.carnest.Config.CustomUserDetails;
+import com.example.carnest.Config.RateLimit;
 import com.example.carnest.Model.AuthDTO;
 import com.example.carnest.Service.ChatService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -21,6 +22,7 @@ public class ChatController {
 
     @PostMapping("/send/{receiverId}")
     @Operation(summary = "Gửi tin nhắn")
+    @RateLimit(action = "send_chat", limit = 20, windowSeconds = 60)
     public ResponseEntity<AuthDTO.MessageResponse> send(
             @AuthenticationPrincipal CustomUserDetails u, @PathVariable Long receiverId,
             @RequestBody Map<String, String> body) {

@@ -1,6 +1,7 @@
 package com.example.carnest.API;
 
 import com.example.carnest.Config.CustomUserDetails;
+import com.example.carnest.Config.RateLimit;
 import com.example.carnest.Model.AuthDTO;
 import com.example.carnest.Model.ReviewDTO;
 import com.example.carnest.Service.ReviewService;
@@ -22,6 +23,7 @@ public class ReviewController {
 
     @PostMapping
     @Operation(summary = "Đánh giá đơn hàng (sau khi COMPLETED)")
+    @RateLimit(action = "create_review", limit = 5, windowSeconds = 600)
     public ResponseEntity<AuthDTO.MessageResponse> create(
             @AuthenticationPrincipal CustomUserDetails u,
             @Valid @RequestBody ReviewDTO.CreateRequest request) {

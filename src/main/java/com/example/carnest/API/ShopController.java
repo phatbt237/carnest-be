@@ -1,6 +1,7 @@
 package com.example.carnest.API;
 
 import com.example.carnest.Config.CustomUserDetails;
+import com.example.carnest.Config.RateLimit;
 import com.example.carnest.Model.AuthDTO;
 import com.example.carnest.Model.ShopDTO;
 import com.example.carnest.Service.ShopService;
@@ -127,6 +128,7 @@ public class ShopController {
     // ===== FOLLOW SHOP =====
     @PostMapping("/{shopId}/follow")
     @Operation(summary = "Follow shop")
+    @RateLimit(action = "follow_shop", limit = 5, windowSeconds = 300)
     public ResponseEntity<AuthDTO.MessageResponse> followShop(
             @AuthenticationPrincipal CustomUserDetails userDetails,
             @PathVariable Long shopId) {

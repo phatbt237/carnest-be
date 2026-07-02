@@ -1,6 +1,7 @@
 package com.example.carnest.API;
 
 import com.example.carnest.Config.CustomUserDetails;
+import com.example.carnest.Config.RateLimit;
 import com.example.carnest.Model.AuthDTO;
 import com.example.carnest.Model.PriceOfferDTO;
 import com.example.carnest.Service.PriceOfferService;
@@ -27,6 +28,7 @@ public class PriceOfferController {
 
     @PostMapping
     @Operation(summary = "Gửi đề xuất giá (buyer)")
+    @RateLimit(action = "create_offer", limit = 8, windowSeconds = 60)
     public ResponseEntity<AuthDTO.MessageResponse> create(
             @AuthenticationPrincipal CustomUserDetails userDetails,
             @Valid @RequestBody PriceOfferDTO.CreateRequest request) {

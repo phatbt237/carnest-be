@@ -33,6 +33,15 @@ public class GlobalExceptionHandler {
                         .build());
     }
 
+    @ExceptionHandler(RateLimitExceededException.class)
+    public ResponseEntity<AuthDTO.MessageResponse> handleRateLimit(RateLimitExceededException ex) {
+        return ResponseEntity.status(HttpStatus.TOO_MANY_REQUESTS)
+                .body(AuthDTO.MessageResponse.builder()
+                        .status(429)
+                        .message(ex.getMessage())
+                        .build());
+    }
+
     @ExceptionHandler(BadCredentialsException.class)
     public ResponseEntity<AuthDTO.MessageResponse> handleBadCredentials(BadCredentialsException ex) {
         return ResponseEntity.status(HttpStatus.UNAUTHORIZED)

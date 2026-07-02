@@ -1,6 +1,7 @@
 package com.example.carnest.API;
 
 import com.example.carnest.Config.CustomUserDetails;
+import com.example.carnest.Config.RateLimit;
 import com.example.carnest.Model.AuthDTO;
 import com.example.carnest.Service.AuthService;
 import jakarta.validation.Valid;
@@ -22,6 +23,7 @@ public class AuthController {
     }
 
     @PostMapping("/register")
+    @RateLimit(action = "register", limit = 5, windowSeconds = 3600, keyType = RateLimit.KeyType.IP)
     public ResponseEntity<AuthDTO.MessageResponse> register(
             @Valid @RequestBody AuthDTO.RegisterRequest request) {
 
@@ -36,6 +38,7 @@ public class AuthController {
     }
 
     @PostMapping("/login")
+    @RateLimit(action = "login", limit = 5, windowSeconds = 60, keyType = RateLimit.KeyType.IP)
     public ResponseEntity<AuthDTO.MessageResponse> login(
             @Valid @RequestBody AuthDTO.LoginRequest request) {
 
