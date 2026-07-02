@@ -119,6 +119,7 @@ public class WantListService {
         r.setStatus(w.getStatus().name());
         r.setIsPublic(w.getIsPublic());
         r.setUsername(w.getUser().getUsername());
+        r.setUserId(w.getUser().getId());
         r.setCreatedAt(w.getCreatedAt());
         return r;
     }

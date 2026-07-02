@@ -50,6 +50,7 @@ public class WantListDTO {
         private String status;
         private Boolean isPublic;
         private String username;
+        private Long userId;
         private LocalDateTime createdAt;
 
         public WantListResponse() {}
@@ -73,6 +74,8 @@ public class WantListDTO {
         public void setIsPublic(Boolean isPublic) { this.isPublic = isPublic; }
         public String getUsername() { return username; }
         public void setUsername(String username) { this.username = username; }
+        public Long getUserId() { return userId; }
+        public void setUserId(Long userId) { this.userId = userId; }
         public LocalDateTime getCreatedAt() { return createdAt; }
         public void setCreatedAt(LocalDateTime createdAt) { this.createdAt = createdAt; }
     }
