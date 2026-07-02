@@ -29,6 +29,7 @@ public class OrderService {
     private final ProductImageRepository productImageRepository;
     private final ShopRepository shopRepository;
     private final UserRepository userRepository;
+    private final UserAddressRepository userAddressRepository;
     private final WalletRepository walletRepository;
     private final WalletTransactionRepository walletTransactionRepository;
     private final EventPublisher eventPublisher;
@@ -41,7 +42,8 @@ public class OrderService {
                         OrderStatusHistoryRepository statusHistoryRepository,
                         CartItemRepository cartItemRepository, ProductRepository productRepository,
                         ProductImageRepository productImageRepository, ShopRepository shopRepository,
-                        UserRepository userRepository, WalletRepository walletRepository,
+                        UserRepository userRepository, UserAddressRepository userAddressRepository,
+                        WalletRepository walletRepository,
                         WalletTransactionRepository walletTransactionRepository, EventPublisher eventPublisher) {
         this.orderRepository = orderRepository;
         this.orderItemRepository = orderItemRepository;
@@ -51,6 +53,7 @@ public class OrderService {
         this.productImageRepository = productImageRepository;
         this.shopRepository = shopRepository;
         this.userRepository = userRepository;
+        this.userAddressRepository = userAddressRepository;
         this.walletRepository = walletRepository;
         this.walletTransactionRepository = walletTransactionRepository;
         this.eventPublisher = eventPublisher;
@@ -160,6 +163,34 @@ public class OrderService {
 //        return orders;
 //    }
 
+    // Ưu tiên: addressId đã lưu > nhập tay > địa chỉ mặc định
+    private String[] resolveShippingInfo(Long userId, OrderDTO.CheckoutRequest request) {
+        if (request.getAddressId() != null) {
+            UserAddress addr = userAddressRepository.findByIdAndUserId(request.getAddressId(), userId)
+                    .orElseThrow(() -> new ResourceNotFoundException("Địa chỉ", "id", request.getAddressId()));
+            return new String[]{addr.getReceiverName(), addr.getPhone(), buildFullAddress(addr)};
+        }
+
+        boolean hasManualInput = request.getShippingName() != null && !request.getShippingName().isBlank()
+                && request.getShippingPhone() != null && !request.getShippingPhone().isBlank()
+                && request.getShippingAddress() != null && !request.getShippingAddress().isBlank();
+        if (hasManualInput) {
+            return new String[]{request.getShippingName(), request.getShippingPhone(), request.getShippingAddress()};
+        }
+
+        UserAddress defaultAddress = userAddressRepository.findByUserIdAndIsDefaultTrue(userId)
+                .orElseThrow(() -> new BadRequestException(
+                        "Bạn chưa có địa chỉ giao hàng, vui lòng thêm địa chỉ hoặc nhập thông tin giao hàng"));
+        return new String[]{defaultAddress.getReceiverName(), defaultAddress.getPhone(), buildFullAddress(defaultAddress)};
+    }
+
+    private String buildFullAddress(UserAddress addr) {
+        StringBuilder sb = new StringBuilder(addr.getStreetAddress());
+        if (addr.getWard() != null && !addr.getWard().isBlank()) sb.append(", ").append(addr.getWard());
+        sb.append(", ").append(addr.getDistrict()).append(", ").append(addr.getProvince());
+        return sb.toString();
+    }
+
     @Transactional
     public List<OrderDTO.OrderResponse> checkout(Long userId, OrderDTO.CheckoutRequest request) {
         List<CartItem> cartItems = cartItemRepository.findByUserIdWithProduct(userId);
@@ -184,6 +215,11 @@ public class OrderService {
 
         User buyer = userRepository.findById(userId)
                 .orElseThrow(() -> new ResourceNotFoundException("User", "id", userId));
+
+        String[] shipping = resolveShippingInfo(userId, request);
+        String shippingName = shipping[0];
+        String shippingPhone = shipping[1];
+        String shippingAddress = shipping[2];
 
         // Batch fetch primary images
         List<Long> productIds = cartItems.stream().map(ci -> ci.getProduct().getId()).collect(Collectors.toList());
@@ -235,9 +271,9 @@ public class OrderService {
             order.setOrderCode(generateOrderCode());
             order.setBuyer(buyer);
             order.setShop(shop);
-            order.setShippingName(request.getShippingName());
-            order.setShippingPhone(request.getShippingPhone());
-            order.setShippingAddress(request.getShippingAddress());
+            order.setShippingName(shippingName);
+            order.setShippingPhone(shippingPhone);
+            order.setShippingAddress(shippingAddress);
             order.setSubtotal(subtotal);
             order.setShippingFee(BigDecimal.ZERO);
             order.setDiscountAmount(BigDecimal.ZERO);

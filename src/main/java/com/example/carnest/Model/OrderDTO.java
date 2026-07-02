@@ -1,7 +1,6 @@
 package com.example.carnest.Model;
 
 import com.example.carnest.Enum.PaymentMethod;
-import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 
 import java.math.BigDecimal;
@@ -12,11 +11,11 @@ public class OrderDTO {
 
     // ===== CHECKOUT REQUEST =====
     public static class CheckoutRequest {
-        @NotBlank(message = "Tên người nhận không được để trống")
+        // Chọn 1 địa chỉ đã lưu (ưu tiên cao nhất). Nếu bỏ trống và không gửi
+        // shippingName/Phone/Address thì hệ thống tự dùng địa chỉ mặc định.
+        private Long addressId;
         private String shippingName;
-        @NotBlank(message = "Số điện thoại không được để trống")
         private String shippingPhone;
-        @NotBlank(message = "Địa chỉ không được để trống")
         private String shippingAddress;
         @NotNull(message = "Phương thức thanh toán không được để trống")
         private PaymentMethod paymentMethod;
@@ -26,6 +25,8 @@ public class OrderDTO {
         private List<Long> productIds;
 
         public CheckoutRequest() {}
+        public Long getAddressId() { return addressId; }
+        public void setAddressId(Long addressId) { this.addressId = addressId; }
         public String getShippingName() { return shippingName; }
         public void setShippingName(String shippingName) { this.shippingName = shippingName; }
         public String getShippingPhone() { return shippingPhone; }
