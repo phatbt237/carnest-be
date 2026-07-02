@@ -71,7 +71,7 @@ public class ShopService {
         user.setIsSeller(true);
         userRepository.save(user);
 
-        return toShopResponse(shop, false);
+        return toShopResponse(shop, false, true);
     }
 
     // ===== CẬP NHẬT SHOP =====
@@ -94,14 +94,14 @@ public class ShopService {
         if (request.getShippingInfo() != null) shop.setShippingInfo(request.getShippingInfo());
 
         shop = shopRepository.save(shop);
-        return toShopResponse(shop, false);
+        return toShopResponse(shop, false, true);
     }
 
     // ===== XEM SHOP CỦA TÔI =====
     public ShopDTO.ShopResponse getMyShop(Long userId) {
         Shop shop = shopRepository.findByUserIdWithUser(userId)
                 .orElseThrow(() -> new BadRequestException("Bạn chưa tạo shop"));
-        return toShopResponse(shop, false);
+        return toShopResponse(shop, false, true);
     }
 
     // ===== XEM SHOP THEO SLUG (public) =====
@@ -112,11 +112,10 @@ public class ShopService {
             throw new ResourceNotFoundException("Shop", "slug", slug);
         }
 
-        boolean isFollowing = false;
-        if (currentUserId != null) {
-            isFollowing = shopFollowerRepository.existsByShopIdAndUserId(shop.getId(), currentUserId);
-        }
-        return toShopResponse(shop, isFollowing);
+        boolean isOwner = currentUserId != null && shop.getUser().getId().equals(currentUserId);
+        boolean isFollowing = !isOwner && currentUserId != null
+                && shopFollowerRepository.existsByShopIdAndUserId(shop.getId(), currentUserId);
+        return toShopResponse(shop, isFollowing, isOwner);
     }
 
     // ===== XEM SHOP THEO ID (public) =====
@@ -127,11 +126,10 @@ public class ShopService {
             throw new ResourceNotFoundException("Shop", "id", shopId);
         }
 
-        boolean isFollowing = false;
-        if (currentUserId != null) {
-            isFollowing = shopFollowerRepository.existsByShopIdAndUserId(shop.getId(), currentUserId);
-        }
-        return toShopResponse(shop, isFollowing);
+        boolean isOwner = currentUserId != null && shop.getUser().getId().equals(currentUserId);
+        boolean isFollowing = !isOwner && currentUserId != null
+                && shopFollowerRepository.existsByShopIdAndUserId(shop.getId(), currentUserId);
+        return toShopResponse(shop, isFollowing, isOwner);
     }
 
     // ===== DANH SÁCH SHOP — cursor-based =====
@@ -360,7 +358,7 @@ public class ShopService {
     }
 
     // ===== HELPER: convert Entity -> ShopResponse =====
-    private ShopDTO.ShopResponse toShopResponse(Shop shop, boolean isFollowing) {
+    private ShopDTO.ShopResponse toShopResponse(Shop shop, boolean isFollowing, boolean isOwner) {
         ShopDTO.ShopResponse response = new ShopDTO.ShopResponse();
         response.setId(shop.getId());
         response.setShopName(shop.getShopName());
@@ -376,6 +374,7 @@ public class ShopService {
         response.setRatingAvg(shop.getUser().getSellerRatingAvg());
         response.setIsVerified(shop.getIsVerified());
         response.setIsFollowing(isFollowing);
+        response.setIsOwner(isOwner);
         response.setCreatedAt(shop.getCreatedAt());
 
         // User đã được JOIN FETCH — không gây thêm query
