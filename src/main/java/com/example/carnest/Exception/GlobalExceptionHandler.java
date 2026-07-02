@@ -39,10 +39,15 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(RateLimitExceededException.class)
     public ResponseEntity<AuthDTO.MessageResponse> handleRateLimit(RateLimitExceededException ex) {
+        Map<String, Long> data = new HashMap<>();
+        data.put("retryAfterSeconds", ex.getRetryAfterSeconds());
+
         return ResponseEntity.status(HttpStatus.TOO_MANY_REQUESTS)
+                .header("Retry-After", String.valueOf(ex.getRetryAfterSeconds()))
                 .body(AuthDTO.MessageResponse.builder()
                         .status(429)
                         .message(ex.getMessage())
+                        .data(data)
                         .build());
     }
 

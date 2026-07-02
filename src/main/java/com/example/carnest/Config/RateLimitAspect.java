@@ -30,10 +30,27 @@ public class RateLimitAspect {
             redisTemplate.expire(key, Duration.ofSeconds(rateLimit.windowSeconds()));
         }
         if (count != null && count > rateLimit.limit()) {
-            throw new RateLimitExceededException("Bạn thao tác quá nhanh, vui lòng thử lại sau");
+            long retryAfterSeconds = resolveRetryAfterSeconds(key, rateLimit.windowSeconds());
+            throw new RateLimitExceededException(
+                    "Bạn thao tác quá nhanh, vui lòng thử lại sau " + formatDuration(retryAfterSeconds),
+                    retryAfterSeconds);
         }
 
         return joinPoint.proceed();
+    }
+
+    private long resolveRetryAfterSeconds(String key, int windowSeconds) {
+        Long ttl = redisTemplate.getExpire(key);
+        return (ttl != null && ttl > 0) ? ttl : windowSeconds;
+    }
+
+    private String formatDuration(long seconds) {
+        if (seconds < 60) {
+            return seconds + " giây";
+        }
+        long minutes = seconds / 60;
+        long remainSeconds = seconds % 60;
+        return remainSeconds == 0 ? minutes + " phút" : minutes + " phút " + remainSeconds + " giây";
     }
 
     private String resolveIdentity(RateLimit.KeyType keyType) {
