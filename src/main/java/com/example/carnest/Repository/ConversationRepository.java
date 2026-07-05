@@ -18,6 +18,7 @@ public interface ConversationRepository extends JpaRepository<Conversation, Long
 
     @Query("SELECT c FROM Conversation c " +
             "JOIN FETCH c.user1 JOIN FETCH c.user2 " +
+            "LEFT JOIN FETCH c.product LEFT JOIN FETCH c.order LEFT JOIN FETCH c.wantList " +
             "WHERE (c.user1.id = :userId OR c.user2.id = :userId) " +
             "AND (:cursorId IS NULL OR c.id < :cursorId) " +
             "ORDER BY c.lastMessageAt DESC NULLS LAST, c.id DESC")

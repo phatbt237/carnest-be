@@ -42,6 +42,10 @@ public class Conversation {
     @JoinColumn(name = "order_id")
     private Order order;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "want_list_id")
+    private WantList wantList;
+
     @Column(name = "last_message_at")
     private LocalDateTime lastMessageAt;
 

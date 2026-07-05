@@ -3,6 +3,7 @@ package com.example.carnest.API;
 import com.example.carnest.Config.CustomUserDetails;
 import com.example.carnest.Config.RateLimit;
 import com.example.carnest.Model.AuthDTO;
+import com.example.carnest.Model.ChatDTO;
 import com.example.carnest.Service.ChatService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -10,8 +11,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
-
-import java.util.Map;
 
 @RestController
 @RequestMapping("/api/chat")
@@ -25,9 +24,10 @@ public class ChatController {
     @RateLimit(action = "send_chat", limit = 20, windowSeconds = 60)
     public ResponseEntity<AuthDTO.MessageResponse> send(
             @AuthenticationPrincipal CustomUserDetails u, @PathVariable Long receiverId,
-            @RequestBody Map<String, String> body) {
+            @RequestBody ChatDTO.SendMessageRequest request) {
         return ResponseEntity.ok(AuthDTO.MessageResponse.builder().status(200).message("Đã gửi")
-                .data(chatService.sendMessage(u.getUserId(), receiverId, body.get("content"))).build());
+                .data(chatService.sendMessage(u.getUserId(), receiverId, request.getContent(),
+                        request.getImageUrls(), request.getTagType(), request.getTagId())).build());
     }
 
     @GetMapping("/conversations")

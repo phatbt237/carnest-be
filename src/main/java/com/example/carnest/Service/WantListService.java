@@ -61,6 +61,11 @@ public class WantListService {
         return toResponse(w);
     }
 
+    public WantList getById(Long id) {
+        return wantListRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("WantList", "id", id));
+    }
+
     @Transactional
     public void cancel(Long userId, Long id) {
         WantList w = wantListRepository.findById(id)

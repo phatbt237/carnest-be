@@ -1,18 +1,25 @@
 package com.example.carnest.Model;
 
-import jakarta.validation.constraints.NotBlank;
-
 import java.time.LocalDateTime;
+import java.util.List;
 
 public class ChatDTO {
 
     public static class SendMessageRequest {
-        @NotBlank(message = "Nội dung không được để trống")
         private String content;
+        private List<String> imageUrls;
+        private String tagType;
+        private Long tagId;
 
         public SendMessageRequest() {}
         public String getContent() { return content; }
         public void setContent(String content) { this.content = content; }
+        public List<String> getImageUrls() { return imageUrls; }
+        public void setImageUrls(List<String> imageUrls) { this.imageUrls = imageUrls; }
+        public String getTagType() { return tagType; }
+        public void setTagType(String tagType) { this.tagType = tagType; }
+        public Long getTagId() { return tagId; }
+        public void setTagId(Long tagId) { this.tagId = tagId; }
     }
 
     public static class ConversationResponse {

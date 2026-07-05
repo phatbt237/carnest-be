@@ -1,8 +1,12 @@
 package com.example.carnest.API;
 
 import com.example.carnest.Config.CustomUserDetails;
+import com.example.carnest.Config.RateLimit;
+import com.example.carnest.Exception.BadRequestException;
 import com.example.carnest.Model.AuthDTO;
+import com.example.carnest.Model.ChatDTO;
 import com.example.carnest.Model.WantListDTO;
+import com.example.carnest.Service.ChatService;
 import com.example.carnest.Service.WantListService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -19,6 +23,7 @@ import org.springframework.web.bind.annotation.*;
 public class WantListController {
 
     @Autowired private WantListService wantListService;
+    @Autowired private ChatService chatService;
 
     @PostMapping
     @Operation(summary = "Đăng yêu cầu tìm xe")
@@ -58,6 +63,21 @@ public class WantListController {
         return ResponseEntity.ok(AuthDTO.MessageResponse.builder()
                 .status(200).message("Thành công")
                 .data(wantListService.getMyWantList(u.getUserId(), cursor, size)).build());
+    }
+
+    @PostMapping("/{id}/contact")
+    @Operation(summary = "Liên hệ với người đăng yêu cầu tìm xe (dành cho người bán)")
+    @RateLimit(action = "wantlist_contact", limit = 20, windowSeconds = 60)
+    public ResponseEntity<AuthDTO.MessageResponse> contact(
+            @AuthenticationPrincipal CustomUserDetails u, @PathVariable Long id,
+            @RequestBody ChatDTO.SendMessageRequest request) {
+        Long ownerId = wantListService.getById(id).getUser().getId();
+        if (ownerId.equals(u.getUserId())) {
+            throw new BadRequestException("Bạn không thể tự liên hệ với chính yêu cầu tìm xe của mình");
+        }
+        return ResponseEntity.ok(AuthDTO.MessageResponse.builder().status(200).message("Đã gửi")
+                .data(chatService.sendMessage(u.getUserId(), ownerId, request.getContent(),
+                        request.getImageUrls(), "WANT_LIST", id)).build());
     }
 
     @GetMapping("/public")

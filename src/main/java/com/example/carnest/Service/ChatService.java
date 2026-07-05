@@ -21,11 +21,24 @@ public class ChatService {
     @Autowired private ConversationRepository conversationRepository;
     @Autowired private MessageRepository messageRepository;
     @Autowired private UserRepository userRepository;
+    @Autowired private ProductRepository productRepository;
+    @Autowired private OrderRepository orderRepository;
+    @Autowired private WantListRepository wantListRepository;
     @Autowired private SimpMessagingTemplate messagingTemplate;
 
     @Transactional
-    public Map<String, Object> sendMessage(Long senderId, Long receiverId, String content) {
+    public Map<String, Object> sendMessage(Long senderId, Long receiverId, String content,
+                                            List<String> imageUrls, String tagType, Long tagId) {
         if (senderId.equals(receiverId)) throw new BadRequestException("Không thể nhắn cho chính mình");
+
+        boolean hasContent = content != null && !content.isBlank();
+        boolean hasImages = imageUrls != null && !imageUrls.isEmpty();
+        if (!hasContent && !hasImages) {
+            throw new BadRequestException("Tin nhắn phải có nội dung hoặc ảnh");
+        }
+        if (hasImages && imageUrls.size() > 10) {
+            throw new BadRequestException("Tối đa 10 ảnh");
+        }
 
         User sender = userRepository.findById(senderId).orElseThrow();
         User receiver = userRepository.findById(receiverId)
@@ -38,19 +51,29 @@ public class ChatService {
                     c.setUser2(receiver);
                     c.setUser1Unread(0);
                     c.setUser2Unread(0);
+                    applyTag(c, tagType, tagId, senderId, receiverId);
                     return conversationRepository.save(c);
                 });
 
         Message msg = new Message();
         msg.setConversation(conv);
         msg.setSender(sender);
-        msg.setContent(content);
-        msg.setMessageType(MessageType.TEXT);
+        msg.setContent(hasContent ? content : "");
+        msg.setMessageType(hasImages ? MessageType.IMAGE : MessageType.TEXT);
         msg.setIsRead(false);
+        if (hasImages) {
+            List<MessageAttachment> attachments = new ArrayList<>();
+            for (int i = 0; i < imageUrls.size(); i++) {
+                attachments.add(MessageAttachment.builder()
+                        .message(msg).imageUrl(imageUrls.get(i)).sortOrder(i).build());
+            }
+            msg.setAttachments(attachments);
+        }
         msg = messageRepository.save(msg);
 
+        String preview = hasContent ? content : "[Hình ảnh]";
         conv.setLastMessageAt(LocalDateTime.now());
-        conv.setLastMessagePreview(content.length() > 100 ? content.substring(0, 100) : content);
+        conv.setLastMessagePreview(preview.length() > 100 ? preview.substring(0, 100) : preview);
         if (conv.getUser1().getId().equals(receiverId)) {
             conv.setUser1Unread(conv.getUser1Unread() + 1);
         } else {
@@ -62,12 +85,76 @@ public class ChatService {
         payload.put("conversationId", conv.getId());
         payload.put("messageId", msg.getId());
         payload.put("senderUsername", sender.getUsername());
-        payload.put("content", content);
+        payload.put("content", msg.getContent());
+        payload.put("imageUrls", hasImages ? imageUrls : List.of());
         payload.put("timestamp", msg.getCreatedAt().toString());
 
         messagingTemplate.convertAndSend("/topic/chat/" + receiverId, payload);
 
         return payload;
+    }
+
+    private void applyTag(Conversation conv, String tagType, Long tagId, Long senderId, Long receiverId) {
+        if (tagType == null || tagId == null) return;
+
+        switch (tagType) {
+            case "PRODUCT" -> {
+                Product product = productRepository.findById(tagId)
+                        .orElseThrow(() -> new ResourceNotFoundException("Product", "id", tagId));
+                Long shopUserId = product.getShop().getUser().getId();
+                if (!shopUserId.equals(senderId) && !shopUserId.equals(receiverId)) {
+                    throw new BadRequestException("Sản phẩm không thuộc cuộc trò chuyện này");
+                }
+                conv.setProduct(product);
+            }
+            case "ORDER" -> {
+                Order order = orderRepository.findById(tagId)
+                        .orElseThrow(() -> new ResourceNotFoundException("Order", "id", tagId));
+                Long buyerId = order.getBuyer().getId();
+                Long shopUserId = order.getShop().getUser().getId();
+                boolean matches = (buyerId.equals(senderId) && shopUserId.equals(receiverId))
+                        || (buyerId.equals(receiverId) && shopUserId.equals(senderId));
+                if (!matches) {
+                    throw new BadRequestException("Đơn hàng không thuộc cuộc trò chuyện này");
+                }
+                conv.setOrder(order);
+            }
+            case "WANT_LIST" -> {
+                WantList wantList = wantListRepository.findById(tagId)
+                        .orElseThrow(() -> new ResourceNotFoundException("WantList", "id", tagId));
+                Long ownerId = wantList.getUser().getId();
+                if (!ownerId.equals(receiverId) || ownerId.equals(senderId)) {
+                    throw new BadRequestException("Chỉ người bán mới có thể liên hệ về yêu cầu tìm xe này");
+                }
+                conv.setWantList(wantList);
+            }
+            default -> throw new BadRequestException("Loại tag không hợp lệ");
+        }
+    }
+
+    private void addTagInfo(Map<String, Object> m, Conversation c) {
+        if (c.getProduct() != null) {
+            Product p = c.getProduct();
+            m.put("tagType", "PRODUCT");
+            m.put("tagId", p.getId());
+            m.put("tagTitle", p.getName());
+            m.put("tagImageUrl", p.getImages().stream()
+                    .filter(i -> Boolean.TRUE.equals(i.getIsPrimary())).findFirst()
+                    .or(() -> p.getImages().stream().findFirst())
+                    .map(ProductImage::getImageUrl).orElse(null));
+        } else if (c.getOrder() != null) {
+            Order o = c.getOrder();
+            m.put("tagType", "ORDER");
+            m.put("tagId", o.getId());
+            m.put("tagTitle", o.getOrderCode());
+            m.put("tagImageUrl", null);
+        } else if (c.getWantList() != null) {
+            WantList w = c.getWantList();
+            m.put("tagType", "WANT_LIST");
+            m.put("tagId", w.getId());
+            m.put("tagTitle", w.getTitle());
+            m.put("tagImageUrl", null);
+        }
     }
 
     public ShopDTO.CursorPage<Map<String, Object>> getConversations(Long userId, String cursor, int size) {
@@ -89,6 +176,7 @@ public class ChatService {
             m.put("lastMessageAt", c.getLastMessageAt());
             int unread = c.getUser1().getId().equals(userId) ? c.getUser1Unread() : c.getUser2Unread();
             m.put("unread", unread);
+            addTagInfo(m, c);
             return m;
         }).collect(Collectors.toList());
 
@@ -118,6 +206,9 @@ public class ChatService {
             map.put("type", m.getMessageType().name());
             map.put("isRead", m.getIsRead());
             map.put("createdAt", m.getCreatedAt());
+            map.put("imageUrls", m.getAttachments().stream()
+                    .sorted(Comparator.comparing(MessageAttachment::getSortOrder))
+                    .map(MessageAttachment::getImageUrl).collect(Collectors.toList()));
             return map;
         }).collect(Collectors.toList());
 
