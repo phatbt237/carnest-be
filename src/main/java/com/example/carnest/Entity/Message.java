@@ -44,6 +44,12 @@ public class Message {
     @Column(name = "attachment_url", length = 500)
     private String attachmentUrl;
 
+    @Column(name = "tag_type", length = 20)
+    private String tagType;
+
+    @Column(name = "tag_id")
+    private Long tagId;
+
     @Column(name = "is_read")
     @Builder.Default
     private Boolean isRead = false;

@@ -51,9 +51,10 @@ public class ChatService {
                     c.setUser2(receiver);
                     c.setUser1Unread(0);
                     c.setUser2Unread(0);
-                    applyTag(c, tagType, tagId, senderId, receiverId);
                     return conversationRepository.save(c);
                 });
+
+        applyTag(conv, tagType, tagId, senderId, receiverId);
 
         Message msg = new Message();
         msg.setConversation(conv);
@@ -61,6 +62,10 @@ public class ChatService {
         msg.setContent(hasContent ? content : "");
         msg.setMessageType(hasImages ? MessageType.IMAGE : MessageType.TEXT);
         msg.setIsRead(false);
+        if (tagType != null && tagId != null) {
+            msg.setTagType(tagType);
+            msg.setTagId(tagId);
+        }
         if (hasImages) {
             List<MessageAttachment> attachments = new ArrayList<>();
             for (int i = 0; i < imageUrls.size(); i++) {
@@ -88,6 +93,9 @@ public class ChatService {
         payload.put("content", msg.getContent());
         payload.put("imageUrls", hasImages ? imageUrls : List.of());
         payload.put("timestamp", msg.getCreatedAt().toString());
+        if (msg.getTagType() != null) {
+            payload.putAll(resolveTagInfo(msg.getTagType(), msg.getTagId()));
+        }
 
         messagingTemplate.convertAndSend("/topic/chat/" + receiverId, payload);
 
@@ -130,6 +138,36 @@ public class ChatService {
             }
             default -> throw new BadRequestException("Loại tag không hợp lệ");
         }
+    }
+
+    private Map<String, Object> resolveTagInfo(String tagType, Long tagId) {
+        Map<String, Object> m = new HashMap<>();
+        if (tagType == null || tagId == null) return m;
+
+        switch (tagType) {
+            case "PRODUCT" -> productRepository.findById(tagId).ifPresent(p -> {
+                m.put("tagType", "PRODUCT");
+                m.put("tagId", p.getId());
+                m.put("tagTitle", p.getName());
+                m.put("tagImageUrl", p.getImages().stream()
+                        .filter(i -> Boolean.TRUE.equals(i.getIsPrimary())).findFirst()
+                        .or(() -> p.getImages().stream().findFirst())
+                        .map(ProductImage::getImageUrl).orElse(null));
+            });
+            case "ORDER" -> orderRepository.findById(tagId).ifPresent(o -> {
+                m.put("tagType", "ORDER");
+                m.put("tagId", o.getId());
+                m.put("tagTitle", o.getOrderCode());
+                m.put("tagImageUrl", null);
+            });
+            case "WANT_LIST" -> wantListRepository.findById(tagId).ifPresent(w -> {
+                m.put("tagType", "WANT_LIST");
+                m.put("tagId", w.getId());
+                m.put("tagTitle", w.getTitle());
+                m.put("tagImageUrl", null);
+            });
+        }
+        return m;
     }
 
     private void addTagInfo(Map<String, Object> m, Conversation c) {
@@ -209,6 +247,9 @@ public class ChatService {
             map.put("imageUrls", m.getAttachments().stream()
                     .sorted(Comparator.comparing(MessageAttachment::getSortOrder))
                     .map(MessageAttachment::getImageUrl).collect(Collectors.toList()));
+            if (m.getTagType() != null) {
+                map.putAll(resolveTagInfo(m.getTagType(), m.getTagId()));
+            }
             return map;
         }).collect(Collectors.toList());
 
