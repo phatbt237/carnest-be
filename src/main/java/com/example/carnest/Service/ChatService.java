@@ -2,6 +2,7 @@ package com.example.carnest.Service;
 
 import com.example.carnest.Entity.*;
 import com.example.carnest.Enum.MessageType;
+import com.example.carnest.Enum.TagType;
 import com.example.carnest.Exception.BadRequestException;
 import com.example.carnest.Exception.ResourceNotFoundException;
 import com.example.carnest.Model.ShopDTO;
@@ -28,7 +29,7 @@ public class ChatService {
 
     @Transactional
     public Map<String, Object> sendMessage(Long senderId, Long receiverId, String content,
-                                            List<String> imageUrls, String tagType, Long tagId) {
+                                            List<String> imageUrls, TagType tagType, Long tagId) {
         if (senderId.equals(receiverId)) throw new BadRequestException("Không thể nhắn cho chính mình");
 
         boolean hasContent = content != null && !content.isBlank();
@@ -102,11 +103,11 @@ public class ChatService {
         return payload;
     }
 
-    private void applyTag(Conversation conv, String tagType, Long tagId, Long senderId, Long receiverId) {
+    private void applyTag(Conversation conv, TagType tagType, Long tagId, Long senderId, Long receiverId) {
         if (tagType == null || tagId == null) return;
 
         switch (tagType) {
-            case "PRODUCT" -> {
+            case PRODUCT -> {
                 Product product = productRepository.findById(tagId)
                         .orElseThrow(() -> new ResourceNotFoundException("Product", "id", tagId));
                 Long shopUserId = product.getShop().getUser().getId();
@@ -115,7 +116,7 @@ public class ChatService {
                 }
                 conv.setProduct(product);
             }
-            case "ORDER" -> {
+            case ORDER -> {
                 Order order = orderRepository.findById(tagId)
                         .orElseThrow(() -> new ResourceNotFoundException("Order", "id", tagId));
                 Long buyerId = order.getBuyer().getId();
@@ -127,7 +128,7 @@ public class ChatService {
                 }
                 conv.setOrder(order);
             }
-            case "WANT_LIST" -> {
+            case WANT_LIST -> {
                 WantList wantList = wantListRepository.findById(tagId)
                         .orElseThrow(() -> new ResourceNotFoundException("WantList", "id", tagId));
                 Long ownerId = wantList.getUser().getId();
@@ -136,17 +137,16 @@ public class ChatService {
                 }
                 conv.setWantList(wantList);
             }
-            default -> throw new BadRequestException("Loại tag không hợp lệ");
         }
     }
 
-    private Map<String, Object> resolveTagInfo(String tagType, Long tagId) {
+    private Map<String, Object> resolveTagInfo(TagType tagType, Long tagId) {
         Map<String, Object> m = new HashMap<>();
         if (tagType == null || tagId == null) return m;
 
         switch (tagType) {
-            case "PRODUCT" -> productRepository.findById(tagId).ifPresent(p -> {
-                m.put("tagType", "PRODUCT");
+            case PRODUCT -> productRepository.findById(tagId).ifPresent(p -> {
+                m.put("tagType", TagType.PRODUCT);
                 m.put("tagId", p.getId());
                 m.put("tagTitle", p.getName());
                 m.put("tagImageUrl", p.getImages().stream()
@@ -154,14 +154,14 @@ public class ChatService {
                         .or(() -> p.getImages().stream().findFirst())
                         .map(ProductImage::getImageUrl).orElse(null));
             });
-            case "ORDER" -> orderRepository.findById(tagId).ifPresent(o -> {
-                m.put("tagType", "ORDER");
+            case ORDER -> orderRepository.findById(tagId).ifPresent(o -> {
+                m.put("tagType", TagType.ORDER);
                 m.put("tagId", o.getId());
                 m.put("tagTitle", o.getOrderCode());
                 m.put("tagImageUrl", null);
             });
-            case "WANT_LIST" -> wantListRepository.findById(tagId).ifPresent(w -> {
-                m.put("tagType", "WANT_LIST");
+            case WANT_LIST -> wantListRepository.findById(tagId).ifPresent(w -> {
+                m.put("tagType", TagType.WANT_LIST);
                 m.put("tagId", w.getId());
                 m.put("tagTitle", w.getTitle());
                 m.put("tagImageUrl", null);
@@ -173,7 +173,7 @@ public class ChatService {
     private void addTagInfo(Map<String, Object> m, Conversation c) {
         if (c.getProduct() != null) {
             Product p = c.getProduct();
-            m.put("tagType", "PRODUCT");
+            m.put("tagType", TagType.PRODUCT);
             m.put("tagId", p.getId());
             m.put("tagTitle", p.getName());
             m.put("tagImageUrl", p.getImages().stream()
@@ -182,13 +182,13 @@ public class ChatService {
                     .map(ProductImage::getImageUrl).orElse(null));
         } else if (c.getOrder() != null) {
             Order o = c.getOrder();
-            m.put("tagType", "ORDER");
+            m.put("tagType", TagType.ORDER);
             m.put("tagId", o.getId());
             m.put("tagTitle", o.getOrderCode());
             m.put("tagImageUrl", null);
         } else if (c.getWantList() != null) {
             WantList w = c.getWantList();
-            m.put("tagType", "WANT_LIST");
+            m.put("tagType", TagType.WANT_LIST);
             m.put("tagId", w.getId());
             m.put("tagTitle", w.getTitle());
             m.put("tagImageUrl", null);

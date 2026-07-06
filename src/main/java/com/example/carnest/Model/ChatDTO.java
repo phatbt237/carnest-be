@@ -1,5 +1,7 @@
 package com.example.carnest.Model;
 
+import com.example.carnest.Enum.TagType;
+
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -8,7 +10,7 @@ public class ChatDTO {
     public static class SendMessageRequest {
         private String content;
         private List<String> imageUrls;
-        private String tagType;
+        private TagType tagType;
         private Long tagId;
 
         public SendMessageRequest() {}
@@ -16,8 +18,8 @@ public class ChatDTO {
         public void setContent(String content) { this.content = content; }
         public List<String> getImageUrls() { return imageUrls; }
         public void setImageUrls(List<String> imageUrls) { this.imageUrls = imageUrls; }
-        public String getTagType() { return tagType; }
-        public void setTagType(String tagType) { this.tagType = tagType; }
+        public TagType getTagType() { return tagType; }
+        public void setTagType(TagType tagType) { this.tagType = tagType; }
         public Long getTagId() { return tagId; }
         public void setTagId(Long tagId) { this.tagId = tagId; }
     }

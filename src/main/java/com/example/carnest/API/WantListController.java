@@ -2,6 +2,7 @@ package com.example.carnest.API;
 
 import com.example.carnest.Config.CustomUserDetails;
 import com.example.carnest.Config.RateLimit;
+import com.example.carnest.Enum.TagType;
 import com.example.carnest.Exception.BadRequestException;
 import com.example.carnest.Model.AuthDTO;
 import com.example.carnest.Model.ChatDTO;
@@ -77,7 +78,7 @@ public class WantListController {
         }
         return ResponseEntity.ok(AuthDTO.MessageResponse.builder().status(200).message("Đã gửi")
                 .data(chatService.sendMessage(u.getUserId(), ownerId, request.getContent(),
-                        request.getImageUrls(), "WANT_LIST", id)).build());
+                        request.getImageUrls(), TagType.WANT_LIST, id)).build());
     }
 
     @GetMapping("/public")

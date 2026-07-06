@@ -1,6 +1,7 @@
 package com.example.carnest.Entity;
 
 import com.example.carnest.Enum.MessageType;
+import com.example.carnest.Enum.TagType;
 import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
@@ -44,8 +45,9 @@ public class Message {
     @Column(name = "attachment_url", length = 500)
     private String attachmentUrl;
 
+    @Enumerated(EnumType.STRING)
     @Column(name = "tag_type", length = 20)
-    private String tagType;
+    private TagType tagType;
 
     @Column(name = "tag_id")
     private Long tagId;
