@@ -2,6 +2,7 @@ package com.example.carnest.Repository;
 
 import com.example.carnest.Entity.WantList;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
@@ -10,6 +11,10 @@ import java.util.List;
 
 @Repository
 public interface WantListRepository extends JpaRepository<WantList, Long> {
+
+    @Modifying
+    @Query("UPDATE WantList w SET w.contactCount = w.contactCount + 1 WHERE w.id = :id")
+    void incrementContactCount(@Param("id") Long id);
 
     @Query("SELECT w FROM WantList w WHERE w.user.id = :userId " +
             "AND (:cursorId IS NULL OR w.id < :cursorId) ORDER BY w.id DESC")

@@ -25,7 +25,9 @@ public class ChatService {
     @Autowired private ProductRepository productRepository;
     @Autowired private OrderRepository orderRepository;
     @Autowired private WantListRepository wantListRepository;
+    @Autowired private WantListContactRepository wantListContactRepository;
     @Autowired private SimpMessagingTemplate messagingTemplate;
+    @Autowired private EventPublisher eventPublisher;
 
     @Transactional
     public Map<String, Object> sendMessage(Long senderId, Long receiverId, String content,
@@ -136,6 +138,9 @@ public class ChatService {
                     throw new BadRequestException("Chỉ người bán mới có thể liên hệ về yêu cầu tìm xe này");
                 }
                 conv.setWantList(wantList);
+                if (wantListContactRepository.insertIfAbsent(tagId, senderId) > 0) {
+                    eventPublisher.publishWantListContact(tagId);
+                }
             }
         }
     }

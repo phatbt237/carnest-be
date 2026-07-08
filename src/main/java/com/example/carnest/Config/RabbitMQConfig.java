@@ -36,6 +36,7 @@ public class RabbitMQConfig {
     public static final String QUEUE_STATS_UPDATE = "stats.update";
     public static final String QUEUE_OFFER_NOTIFICATION = "offer.notification";
     public static final String QUEUE_TRADE_NOTIFICATION = "trade.notification";
+    public static final String QUEUE_WANTLIST_CONTACT = "wantlist.contact";
 
     // ===== ROUTING KEYS =====
     public static final String RK_NOTIFICATION_PUSH = "notification.push";
@@ -50,6 +51,7 @@ public class RabbitMQConfig {
     public static final String RK_STATS_UPDATE = "stats.update";
     public static final String RK_OFFER_NOTIFICATION = "offer.notification";
     public static final String RK_TRADE_NOTIFICATION = "trade.notification";
+    public static final String RK_WANTLIST_CONTACT = "wantlist.contact";
 
     // ===== JSON Converter =====
     @Bean
@@ -107,6 +109,7 @@ public class RabbitMQConfig {
     @Bean public Queue statsUpdateQueue() { return new Queue(QUEUE_STATS_UPDATE, true); }
     @Bean public Queue offerNotificationQueue() { return new Queue(QUEUE_OFFER_NOTIFICATION, true); }
     @Bean public Queue tradeNotificationQueue() { return new Queue(QUEUE_TRADE_NOTIFICATION, true); }
+    @Bean public Queue wantlistContactQueue() { return new Queue(QUEUE_WANTLIST_CONTACT, true); }
 
     // ===== BINDINGS =====
     @Bean public Binding bindNotificationPush() {
@@ -144,6 +147,9 @@ public class RabbitMQConfig {
     }
     @Bean public Binding bindTradeNotification() {
         return BindingBuilder.bind(tradeNotificationQueue()).to(notificationExchange()).with(RK_TRADE_NOTIFICATION);
+    }
+    @Bean public Binding bindWantlistContact() {
+        return BindingBuilder.bind(wantlistContactQueue()).to(orderExchange()).with(RK_WANTLIST_CONTACT);
     }
 
     @Bean

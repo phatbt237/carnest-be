@@ -22,6 +22,7 @@ public class EventConsumer {
     @Autowired private OrderItemRepository orderItemRepository;
     @Autowired private ProductRepository productRepository;
     @Autowired private UserRepository userRepository;
+    @Autowired private WantListRepository wantListRepository;
 
     // ===== NOTIFICATION PUSH — gửi WebSocket + lưu DB =====
     @RabbitListener(queues = RabbitMQConfig.QUEUE_NOTIFICATION_PUSH)
@@ -265,6 +266,18 @@ public class EventConsumer {
             System.out.println("[Consumer] Stats updated: user " + user.getUsername() + " " + event.getField() + " +" + event.getIncrement());
         } catch (Exception e) {
             System.err.println("[Consumer] Stats update error: " + e.getMessage());
+        }
+    }
+
+    // ===== WANTLIST CONTACT — cộng dồn số người đã liên hệ (async) =====
+    @RabbitListener(queues = RabbitMQConfig.QUEUE_WANTLIST_CONTACT)
+    @Transactional
+    public void handleWantListContact(EventDTO.WantListContactEvent event) {
+        try {
+            wantListRepository.incrementContactCount(event.getWantListId());
+            System.out.println("[Consumer] WantList contactCount +1: id=" + event.getWantListId());
+        } catch (Exception e) {
+            System.err.println("[Consumer] WantList contact update error: " + e.getMessage());
         }
     }
 }

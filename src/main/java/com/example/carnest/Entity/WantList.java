@@ -74,6 +74,13 @@ public class WantList {
     @Builder.Default
     private Boolean autoNotify = true;
 
+    @Column(name = "image_url", length = 500)
+    private String imageUrl;
+
+    @Column(name = "contact_count")
+    @Builder.Default
+    private Integer contactCount = 0;
+
     @CreationTimestamp
     @Column(name = "created_at", updatable = false)
     private LocalDateTime createdAt;

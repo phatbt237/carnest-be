@@ -21,6 +21,8 @@ public class WantListDTO {
         private String carModel;
         private BigDecimal maxPrice;
         private Boolean isPublic;
+        @Size(max = 500)
+        private String imageUrl;
 
         public CreateRequest() {}
         public String getTitle() { return title; }
@@ -37,6 +39,8 @@ public class WantListDTO {
         public void setMaxPrice(BigDecimal maxPrice) { this.maxPrice = maxPrice; }
         public Boolean getIsPublic() { return isPublic; }
         public void setIsPublic(Boolean isPublic) { this.isPublic = isPublic; }
+        public String getImageUrl() { return imageUrl; }
+        public void setImageUrl(String imageUrl) { this.imageUrl = imageUrl; }
     }
 
     public static class WantListResponse {
@@ -52,6 +56,8 @@ public class WantListDTO {
         private String username;
         private Long userId;
         private LocalDateTime createdAt;
+        private String imageUrl;
+        private Integer contactCount;
 
         public WantListResponse() {}
         public Long getId() { return id; }
@@ -78,5 +84,9 @@ public class WantListDTO {
         public void setUserId(Long userId) { this.userId = userId; }
         public LocalDateTime getCreatedAt() { return createdAt; }
         public void setCreatedAt(LocalDateTime createdAt) { this.createdAt = createdAt; }
+        public String getImageUrl() { return imageUrl; }
+        public void setImageUrl(String imageUrl) { this.imageUrl = imageUrl; }
+        public Integer getContactCount() { return contactCount; }
+        public void setContactCount(Integer contactCount) { this.contactCount = contactCount; }
     }
 }

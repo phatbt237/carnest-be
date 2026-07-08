@@ -101,4 +101,11 @@ public class EventPublisher {
         rabbitTemplate.convertAndSend(RabbitMQConfig.EXCHANGE_ORDER,
                 RabbitMQConfig.RK_STATS_UPDATE, event);
     }
+
+    // ===== WANTLIST CONTACT =====
+    public void publishWantListContact(Long wantListId) {
+        EventDTO.WantListContactEvent event = new EventDTO.WantListContactEvent(wantListId);
+        rabbitTemplate.convertAndSend(RabbitMQConfig.EXCHANGE_ORDER,
+                RabbitMQConfig.RK_WANTLIST_CONTACT, event);
+    }
 }

@@ -198,4 +198,15 @@ public class EventDTO {
         public int getIncrement() { return increment; }
         public void setIncrement(int increment) { this.increment = increment; }
     }
+
+    // ===== WANTLIST CONTACT EVENT =====
+    public static class WantListContactEvent implements Serializable {
+        private Long wantListId;
+
+        public WantListContactEvent() {}
+        public WantListContactEvent(Long wantListId) { this.wantListId = wantListId; }
+
+        public Long getWantListId() { return wantListId; }
+        public void setWantListId(Long wantListId) { this.wantListId = wantListId; }
+    }
 }

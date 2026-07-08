@@ -37,6 +37,7 @@ public class WantListService {
         w.setStatus(WantListStatus.ACTIVE);
         w.setIsPublic(request.getIsPublic() != null ? request.getIsPublic() : true);
         w.setAutoNotify(true);
+        w.setImageUrl(request.getImageUrl());
         w = wantListRepository.save(w);
         return toResponse(w);
     }
@@ -56,6 +57,7 @@ public class WantListService {
         if (request.getCarModel() != null) w.setCarModel(request.getCarModel());
         if (request.getMaxPrice() != null) w.setMaxPrice(request.getMaxPrice());
         if (request.getIsPublic() != null) w.setIsPublic(request.getIsPublic());
+        if (request.getImageUrl() != null) w.setImageUrl(request.getImageUrl());
 
         w = wantListRepository.save(w);
         return toResponse(w);
@@ -126,6 +128,8 @@ public class WantListService {
         r.setUsername(w.getUser().getUsername());
         r.setUserId(w.getUser().getId());
         r.setCreatedAt(w.getCreatedAt());
+        r.setImageUrl(w.getImageUrl());
+        r.setContactCount(w.getContactCount());
         return r;
     }
 }
