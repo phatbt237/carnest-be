@@ -458,14 +458,17 @@ public class OrderService {
     public OrderDTO.OrderResponse shipOrder(Long userId, Long orderId, OrderDTO.UpdateStatusRequest request) {
         Order order = getOrderForSeller(userId, orderId);
         validateStatusTransition(order.getStatus(), OrderStatus.SHIPPING);
+        if (request == null || request.getProofImageUrl() == null || request.getProofImageUrl().isBlank()) {
+            throw new BadRequestException("Vui lòng đính kèm ảnh xác nhận đã bàn giao hàng cho đơn vị vận chuyển");
+        }
         order.setStatus(OrderStatus.SHIPPING);
         order.setShippedAt(LocalDateTime.now());
-        if (request != null) {
-            if (request.getTrackingNumber() != null) order.setTrackingNumber(request.getTrackingNumber());
-            if (request.getShippingMethod() != null) order.setShippingMethod(request.getShippingMethod());
-        }
+        order.setShippingProofImageUrl(request.getProofImageUrl());
+        if (request.getTrackingNumber() != null) order.setTrackingNumber(request.getTrackingNumber());
+        if (request.getShippingMethod() != null) order.setShippingMethod(request.getShippingMethod());
         orderRepository.save(order);
-        addStatusHistory(order, OrderStatus.CONFIRMED, OrderStatus.SHIPPING, userId, "Đã gửi hàng");
+        addStatusHistory(order, OrderStatus.CONFIRMED, OrderStatus.SHIPPING, userId, "Đã gửi hàng",
+                request.getProofImageUrl());
         return toOrderResponse(order);
     }
 
@@ -659,6 +662,7 @@ public class OrderService {
             info.setToStatus(h.getToStatus());
             info.setChangedBy(h.getChangedBy() != null ? h.getChangedBy().getUsername() : null);
             info.setNote(h.getNote());
+            info.setImageUrl(h.getImageUrl());
             info.setCreatedAt(h.getCreatedAt());
             return info;
         }).collect(Collectors.toList());
@@ -697,6 +701,11 @@ public class OrderService {
     }
 
     private void addStatusHistory(Order order, OrderStatus from, OrderStatus to, Long changedBy, String note) {
+        addStatusHistory(order, from, to, changedBy, note, null);
+    }
+
+    private void addStatusHistory(Order order, OrderStatus from, OrderStatus to, Long changedBy, String note,
+            String imageUrl) {
         OrderStatusHistory history = new OrderStatusHistory();
         history.setOrder(order);
         history.setFromStatus(from != null ? from.name() : null);
@@ -705,6 +714,7 @@ public class OrderService {
             history.setChangedBy(userRepository.findById(changedBy).orElse(null));
         }
         history.setNote(note);
+        history.setImageUrl(imageUrl);
         statusHistoryRepository.save(history);
     }
 
@@ -731,6 +741,7 @@ public class OrderService {
         r.setShippingAddress(o.getShippingAddress());
         r.setShippingMethod(o.getShippingMethod());
         r.setTrackingNumber(o.getTrackingNumber());
+        r.setShippingProofImageUrl(o.getShippingProofImageUrl());
         r.setBuyerNote(o.getBuyerNote());
         r.setSellerNote(o.getSellerNote());
         r.setCancelReason(o.getCancelReason());

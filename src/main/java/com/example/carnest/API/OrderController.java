@@ -111,7 +111,8 @@ public class OrderController {
 
     // ===== SELLER GỬI HÀNG =====
     @PutMapping("/{id}/ship")
-    @Operation(summary = "Seller gửi hàng", description = "Gửi kèm tracking number")
+    @Operation(summary = "Seller gửi hàng",
+            description = "Gửi kèm tracking number. Bắt buộc proofImageUrl (ảnh xác nhận đã bàn giao hàng cho đơn vị vận chuyển, upload trước qua /api/upload/image) để tránh tranh chấp mất hàng")
     public ResponseEntity<AuthDTO.MessageResponse> ship(
             @AuthenticationPrincipal CustomUserDetails userDetails,
             @PathVariable Long id,

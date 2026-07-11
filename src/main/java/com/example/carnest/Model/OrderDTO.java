@@ -59,6 +59,7 @@ public class OrderDTO {
         private String shippingAddress;
         private String shippingMethod;
         private String trackingNumber;
+        private String shippingProofImageUrl;
         private String buyerNote;
         private String sellerNote;
         private String cancelReason;
@@ -106,6 +107,8 @@ public class OrderDTO {
         public void setShippingMethod(String shippingMethod) { this.shippingMethod = shippingMethod; }
         public String getTrackingNumber() { return trackingNumber; }
         public void setTrackingNumber(String trackingNumber) { this.trackingNumber = trackingNumber; }
+        public String getShippingProofImageUrl() { return shippingProofImageUrl; }
+        public void setShippingProofImageUrl(String shippingProofImageUrl) { this.shippingProofImageUrl = shippingProofImageUrl; }
         public String getBuyerNote() { return buyerNote; }
         public void setBuyerNote(String buyerNote) { this.buyerNote = buyerNote; }
         public String getSellerNote() { return sellerNote; }
@@ -191,6 +194,7 @@ public class OrderDTO {
         private String toStatus;
         private String changedBy;
         private String note;
+        private String imageUrl;
         private LocalDateTime createdAt;
 
         public StatusHistoryInfo() {}
@@ -202,6 +206,8 @@ public class OrderDTO {
         public void setChangedBy(String changedBy) { this.changedBy = changedBy; }
         public String getNote() { return note; }
         public void setNote(String note) { this.note = note; }
+        public String getImageUrl() { return imageUrl; }
+        public void setImageUrl(String imageUrl) { this.imageUrl = imageUrl; }
         public LocalDateTime getCreatedAt() { return createdAt; }
         public void setCreatedAt(LocalDateTime createdAt) { this.createdAt = createdAt; }
     }
@@ -211,6 +217,7 @@ public class OrderDTO {
         private String note;
         private String trackingNumber;
         private String shippingMethod;
+        private String proofImageUrl;
         private String cancelReason;
 
         public UpdateStatusRequest() {}
@@ -220,6 +227,8 @@ public class OrderDTO {
         public void setTrackingNumber(String trackingNumber) { this.trackingNumber = trackingNumber; }
         public String getShippingMethod() { return shippingMethod; }
         public void setShippingMethod(String shippingMethod) { this.shippingMethod = shippingMethod; }
+        public String getProofImageUrl() { return proofImageUrl; }
+        public void setProofImageUrl(String proofImageUrl) { this.proofImageUrl = proofImageUrl; }
         public String getCancelReason() { return cancelReason; }
         public void setCancelReason(String cancelReason) { this.cancelReason = cancelReason; }
     }

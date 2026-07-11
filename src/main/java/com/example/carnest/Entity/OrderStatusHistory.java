@@ -36,6 +36,9 @@ public class OrderStatusHistory {
     @Column(columnDefinition = "TEXT")
     private String note;
 
+    @Column(name = "image_url", length = 500)
+    private String imageUrl;
+
     @CreationTimestamp
     @Column(name = "created_at", updatable = false)
     private LocalDateTime createdAt;

@@ -100,6 +100,9 @@ public class Order {
     @Column(name = "tracking_number", length = 100)
     private String trackingNumber;
 
+    @Column(name = "shipping_proof_image_url", length = 500)
+    private String shippingProofImageUrl;
+
     @Column(name = "shipped_at")
     private LocalDateTime shippedAt;
 
