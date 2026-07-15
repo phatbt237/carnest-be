@@ -246,6 +246,7 @@ public class ProductDTO {
         private Integer soldCount;
         private Integer quantity;
         private Integer viewCount;
+        private Boolean allowOffer;
         private LocalDateTime createdAt;
 
         public ProductSummary() {}
@@ -253,7 +254,7 @@ public class ProductDTO {
         public ProductSummary(Long id, String name, String slug, BigDecimal price, BigDecimal originalPrice,
                               String scale, ProductCondition condition, Boolean isVerified, Boolean freeShipping,
                               String shopName, String shopSlug, String brandName,
-                              Integer soldCount, Integer quantity, Integer viewCount, LocalDateTime createdAt) {
+                              Integer soldCount, Integer quantity, Integer viewCount, Boolean allowOffer, LocalDateTime createdAt) {
             this.id = id;
             this.name = name;
             this.slug = slug;
@@ -269,6 +270,7 @@ public class ProductDTO {
             this.soldCount = soldCount;
             this.quantity = quantity;
             this.viewCount = viewCount;
+            this.allowOffer = allowOffer;
             this.createdAt = createdAt;
         }
 
@@ -304,6 +306,8 @@ public class ProductDTO {
         public void setQuantity(Integer quantity) { this.quantity = quantity; }
         public Integer getViewCount() { return viewCount; }
         public void setViewCount(Integer viewCount) { this.viewCount = viewCount; }
+        public Boolean getAllowOffer() { return allowOffer; }
+        public void setAllowOffer(Boolean allowOffer) { this.allowOffer = allowOffer; }
         public LocalDateTime getCreatedAt() { return createdAt; }
         public void setCreatedAt(LocalDateTime createdAt) { this.createdAt = createdAt; }
     }

@@ -38,7 +38,7 @@ public interface ProductRepository extends JpaRepository<Product, Long> {
     @Query("SELECT new com.example.carnest.Model.ProductDTO$ProductSummary(" +
            "p.id, p.name, p.slug, p.price, p.originalPrice, p.scale, p.condition, " +
            "p.isVerified, p.freeShipping, s.shopName, s.slug, b.name, " +
-           "p.soldCount, p.quantity, p.viewCount, p.createdAt) " +
+           "p.soldCount, p.quantity, p.viewCount, p.allowOffer, p.createdAt) " +
            "FROM Product p JOIN p.shop s LEFT JOIN p.brand b " +
            "WHERE p.status = 'ACTIVE' AND (:cursorId IS NULL OR p.id < :cursorId) " +
            "ORDER BY p.id DESC")
@@ -48,7 +48,7 @@ public interface ProductRepository extends JpaRepository<Product, Long> {
     @Query("SELECT new com.example.carnest.Model.ProductDTO$ProductSummary(" +
            "p.id, p.name, p.slug, p.price, p.originalPrice, p.scale, p.condition, " +
            "p.isVerified, p.freeShipping, s.shopName, s.slug, b.name, " +
-           "p.soldCount, p.quantity, p.viewCount, p.createdAt) " +
+           "p.soldCount, p.quantity, p.viewCount, p.allowOffer, p.createdAt) " +
            "FROM Product p JOIN p.shop s LEFT JOIN p.brand b " +
            "WHERE p.status = 'ACTIVE' " +
            "AND (:cursorPrice IS NULL OR p.price > :cursorPrice OR (p.price = :cursorPrice AND p.id > :cursorId)) " +
@@ -62,7 +62,7 @@ public interface ProductRepository extends JpaRepository<Product, Long> {
     @Query("SELECT new com.example.carnest.Model.ProductDTO$ProductSummary(" +
            "p.id, p.name, p.slug, p.price, p.originalPrice, p.scale, p.condition, " +
            "p.isVerified, p.freeShipping, s.shopName, s.slug, b.name, " +
-           "p.soldCount, p.quantity, p.viewCount, p.createdAt) " +
+           "p.soldCount, p.quantity, p.viewCount, p.allowOffer, p.createdAt) " +
            "FROM Product p JOIN p.shop s LEFT JOIN p.brand b " +
            "WHERE p.status = 'ACTIVE' " +
            "AND (:cursorPrice IS NULL OR p.price < :cursorPrice OR (p.price = :cursorPrice AND p.id < :cursorId)) " +
@@ -76,7 +76,7 @@ public interface ProductRepository extends JpaRepository<Product, Long> {
     @Query("SELECT new com.example.carnest.Model.ProductDTO$ProductSummary(" +
            "p.id, p.name, p.slug, p.price, p.originalPrice, p.scale, p.condition, " +
            "p.isVerified, p.freeShipping, s.shopName, s.slug, b.name, " +
-           "p.soldCount, p.quantity, p.viewCount, p.createdAt) " +
+           "p.soldCount, p.quantity, p.viewCount, p.allowOffer, p.createdAt) " +
            "FROM Product p JOIN p.shop s LEFT JOIN p.brand b " +
            "WHERE p.status = 'ACTIVE' " +
            "AND (:shopId IS NULL OR s.id = :shopId) " +
@@ -107,7 +107,7 @@ public interface ProductRepository extends JpaRepository<Product, Long> {
     @Query("SELECT new com.example.carnest.Model.ProductDTO$ProductSummary(" +
            "p.id, p.name, p.slug, p.price, p.originalPrice, p.scale, p.condition, " +
            "p.isVerified, p.freeShipping, s.shopName, s.slug, b.name, " +
-           "p.soldCount, p.quantity, p.viewCount, p.createdAt) " +
+           "p.soldCount, p.quantity, p.viewCount, p.allowOffer, p.createdAt) " +
            "FROM Product p JOIN p.shop s LEFT JOIN p.brand b " +
            "WHERE s.id = :shopId AND p.status = 'ACTIVE' " +
            "AND (:cursorId IS NULL OR p.id < :cursorId) " +

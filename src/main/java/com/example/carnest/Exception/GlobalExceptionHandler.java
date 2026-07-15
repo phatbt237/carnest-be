@@ -6,6 +6,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.BadCredentialsException;
+import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -74,6 +75,15 @@ public class GlobalExceptionHandler {
                         .status(400)
                         .message("Dữ liệu không hợp lệ")
                         .data(errors)
+                        .build());
+    }
+
+    @ExceptionHandler(HttpMessageNotReadableException.class)
+    public ResponseEntity<AuthDTO.MessageResponse> handleNotReadable(HttpMessageNotReadableException ex) {
+        return ResponseEntity.badRequest()
+                .body(AuthDTO.MessageResponse.builder()
+                        .status(400)
+                        .message("Dữ liệu gửi lên không hợp lệ")
                         .build());
     }
 

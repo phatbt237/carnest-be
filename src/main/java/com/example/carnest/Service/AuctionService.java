@@ -167,8 +167,8 @@ public class AuctionService {
 
         // Anti-snipe: gia hạn nếu bid trong X phút cuối
         long minutesLeft = ChronoUnit.MINUTES.between(LocalDateTime.now(), auction.getEndTime());
-        if (minutesLeft <= auction.getSnipeThresholdMin()) {
-            auction.setEndTime(auction.getEndTime().plusMinutes(auction.getAutoExtendMinutes()));
+            if (minutesLeft <= auction.getSnipeThresholdMin()) {
+                auction.setEndTime(auction.getEndTime().plusMinutes(auction.getAutoExtendMinutes()));
             auction.setExtendedCount(auction.getExtendedCount() + 1);
             eventPublisher.publishAuctionClose(auction.getId(), auction.getEndTime());
         }
@@ -369,7 +369,7 @@ public class AuctionService {
         history.setNote("Đơn từ đấu giá — giá thắng " + winPrice + " VNĐ — thanh toán trong 30 phút");
         orderStatusHistoryRepository.save(history);
 
-        long expireDelayMs = 30 * 60 * 1000L;
+        long expireDelayMs = 24 * 60 * 60 * 1000L;
         eventPublisher.publishOrderExpire(order.getId(), expireDelayMs);
 
         System.out.println("[AuctionService] Tạo order " + order.getOrderCode()
